@@ -22,4 +22,9 @@ class UrusanPelaksana extends Model
     {
         return $this->hasMany(Skpd::class);
     }
+
+    public static function insertIfNotDuplicate($kode, $nama, $urusanId)
+    {
+        return self::firstOrCreate(['kode' => $kode, 'nama' => $nama, 'urusan_id' => $urusanId]);
+    }
 }

@@ -13,4 +13,9 @@ class Akun extends Model
     {
         return $this->hasMany(KelompokAkun::class);
     }
+
+    public static function insertIfNotDuplicate($kode, $nama)
+    {
+        return self::firstOrCreate(['kode' => $kode, 'nama' => $nama]);
+    }
 }

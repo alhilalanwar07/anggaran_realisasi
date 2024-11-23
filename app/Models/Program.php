@@ -14,4 +14,14 @@ class Program extends Model
         return $this->belongsTo(SubSkpd::class);
     }
 
+    public function kegiatan()
+    {
+        return $this->hasMany(Kegiatan::class);
+    }
+
+    public static function insertIfNotDuplicate($kode, $nama, $subSkpdId)
+    {
+        return self::firstOrCreate(['kode' => $kode, 'nama' => $nama, 'sub_skpd_id' => $subSkpdId]);
+    }
+
 }

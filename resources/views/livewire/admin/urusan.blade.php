@@ -257,7 +257,7 @@ new class extends Component {
     </div>
     @push('script')
     <script>
-        document.addEventListener('livewire:init', function() {
+        document.addEventListener('livewire:navigated', function() {
 
             Livewire.on('confirmDelete', (id) => {
                 swal({

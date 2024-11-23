@@ -14,4 +14,14 @@ class ObyekAkun extends Model
     {
         return $this->belongsTo(JenisAkun::class);
     }
+
+    public function rincianObyekAkuns()
+    {
+        return $this->hasMany(RincianObyekAkun::class);
+    }
+
+    public static function insertIfNotDuplicate($kode, $nama, $jenisAkunId)
+    {
+        return self::firstOrCreate(['kode' => $kode, 'nama' => $nama, 'jenis_akun_id' => $jenisAkunId]);
+    }
 }

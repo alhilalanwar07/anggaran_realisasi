@@ -13,4 +13,14 @@ class KelompokAkun extends Model
     {
         return $this->belongsTo(Akun::class);
     }
+
+    public function jenisAkun()
+    {
+        return $this->belongsTo(JenisAkun::class);
+    }
+
+    public static function insertIfNotDuplicate($kode, $nama, $akunId)
+    {
+        return self::firstOrCreate(['kode' => $kode, 'nama' => $nama, 'akun_id' => $akunId]);
+    }
 }

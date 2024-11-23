@@ -16,5 +16,9 @@ class Urusan extends Model
         return $this->hasMany(UrusanPelaksana::class);
     }
 
+    public static function insertIfNotDuplicate($kode, $nama)
+    {
+        return self::firstOrCreate(['kode' => $kode, 'nama' => $nama]);
+    }
 
 }

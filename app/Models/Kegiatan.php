@@ -13,4 +13,14 @@ class Kegiatan extends Model
     {
         return $this->belongsTo(Program::class);
     }
+
+    public function rincianAnggaran()
+    {
+        return $this->hasMany(RincianAnggaran::class);
+    }
+
+    public static function insertIfNotDuplicate($kode, $nama, $programId)
+    {
+        return self::firstOrCreate(['kode' => $kode, 'nama' => $nama, 'program_id' => $programId]);
+    }
 }

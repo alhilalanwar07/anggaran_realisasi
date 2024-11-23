@@ -13,4 +13,9 @@ class SubKegiatan extends Model
     {
         return $this->belongsTo(Kegiatan::class);
     }
+
+    public static function insertIfNotDuplicate($kode, $nama, $kegiatanId)
+    {
+        return self::firstOrCreate(['kode' => $kode, 'nama' => $nama, 'kegiatan_id' => $kegiatanId]);
+    }
 }

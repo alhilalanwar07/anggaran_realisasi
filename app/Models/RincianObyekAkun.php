@@ -19,4 +19,9 @@ class RincianObyekAkun extends Model
         return $this->hasMany(SubRincianObyekAkun::class);
     }
 
+    public static function insertIfNotDuplicate($kode, $nama, $obyekAkunId)
+    {
+        return self::firstOrCreate(['kode' => $kode, 'nama' => $nama, 'obyek_akun_id' => $obyekAkunId]);
+    }
+
 }

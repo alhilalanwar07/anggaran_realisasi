@@ -14,4 +14,9 @@ class SubSkpd extends Model
     {
         return $this->belongsTo(Skpd::class);
     }
+
+    public static function insertIfNotDuplicate($kode, $nama, $skpdId)
+    {
+        return self::firstOrCreate(['kode' => $kode, 'nama' => $nama, 'skpd_id' => $skpdId]);
+    }
 }

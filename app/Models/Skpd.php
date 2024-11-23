@@ -20,4 +20,9 @@ class Skpd extends Model
     {
         return $this->hasMany(SubSkpd::class);
     }
+
+    public static function insertIfNotDuplicate($kode, $nama, $urusanPelaksanaId)
+    {
+        return self::firstOrCreate(['kode' => $kode, 'nama' => $nama, 'urusan_pelaksana_id' => $urusanPelaksanaId]);
+    }
 }

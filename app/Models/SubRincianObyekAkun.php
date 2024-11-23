@@ -13,4 +13,11 @@ class SubRincianObyekAkun extends Model
     {
         return $this->belongsTo(RincianObyekAkun::class);
     }
+
+    public static function insertIfNotDuplicate($kode, $nama, $rincianObyekAkunId)
+    {
+        return self::firstOrCreate(['kode' => $kode, 'nama' => $nama, 'rincian_obyek_akun_id' => $rincianObyekAkunId]);
+    }
+
+    
 }

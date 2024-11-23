@@ -18,4 +18,9 @@ class JenisAkun extends Model
     {
         return $this->hasMany(ObyekAkun::class);
     }
+
+    public static function insertIfNotDuplicate($kode, $nama, $kelompokAkunId)
+    {
+        return self::firstOrCreate(['kode' => $kode, 'nama' => $nama, 'kelompok_akun_id' => $kelompokAkunId]);
+    }
 }
