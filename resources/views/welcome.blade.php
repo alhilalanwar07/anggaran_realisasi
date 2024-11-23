@@ -46,7 +46,7 @@
         <div class="container">
             <a class="navbar-brand" href="#">
                 <img src="{{ asset('assets/img/logo/web-app-manifest-512x512.png') }}" height="40" alt="Logo">
-                SIPD
+                SIUPD
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
