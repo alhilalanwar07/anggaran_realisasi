@@ -30,17 +30,16 @@ new #[Layout('layouts.guest')] class extends Component
     <br>
     <p></p>
     <br>
-    <br>
     <form wire:submit="login" class="w-full max-w-md">
 
         <div class="mb-4">
-            <label for="email" class="block text-gray-600 mb-1">E-mail</label>
+            <label for="email" class="block fw-semibold text-gray-500 mb-1">E-mail</label>
             <input wire:model="form.email" type="email" id="email" class="w-full p-2 border rounded" placeholder="" required>
             <x-input-error :messages="$errors->get('form.email')" class="mt-1" />
         </div>
 
         <div class="mb-6">
-            <label for="password" class="block text-gray-600 mb-1">Kata Sandi</label>
+            <label for="password" class="block fw-semibold text-gray-500 mb-1">Kata Sandi</label>
             <input wire:model="form.password" type="password" id="password" class="w-full p-2 border rounded" placeholder="" required>
             <x-input-error :messages="$errors->get('form.password')" class="mt-1" />
         </div>
