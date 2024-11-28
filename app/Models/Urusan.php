@@ -11,7 +11,7 @@ class Urusan extends Model
     protected $table = 'urusans';
     protected $fillable = ['kode', 'nama'];
 
-    public function urusanPelaksanas(): HasMany
+    public function urusanPelaksana(): HasMany
     {
         return $this->hasMany(UrusanPelaksana::class);
     }

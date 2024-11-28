@@ -104,7 +104,7 @@ class ImportData implements ToCollection, WithHeadingRow
                         ],
                         [
                             'nilai_anggaran' => $row['nilai_anggaran'],
-                            'nilai_realisasi' => $row['nilai_realisasi'],
+                            // 'nilai_realisasi' => 0,
                             'tahun' => $row['tahun']
                         ]
                     );

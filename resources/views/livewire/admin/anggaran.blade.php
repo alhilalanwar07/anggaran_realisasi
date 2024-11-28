@@ -42,6 +42,7 @@ new class extends Component {
     {
         return [
             'anggaran' => Anggaran::where('nilai_anggaran', 'like', '%' . $this->search . '%')
+                        ->orderBy('tahun', 'desc')
                         ->paginate($this->paginate)
         ];
     }
@@ -50,6 +51,9 @@ new class extends Component {
     {
         $this->validate([
             'file' => 'required|mimes:xlsx'
+        ], [
+            'file.required' => 'File tidak boleh kosong',
+            'file.mimes' => 'File harus berformat xlsx'
         ]);
 
         $file = $this->file;
@@ -96,10 +100,10 @@ new class extends Component {
                         <thead>
                             <tr>
                                 <th>#</th>
-                                <th>SKPD/Kegiatan</th>
-                                <th>Akun/Rincian</th>
+                                <th>SKPD</th>
+                                <th>Kegiatan</th>
+                                <th>Akun</th>
                                 <th>Nilai Anggaran</th>
-                                <th>Nilai Realisasi</th>
                                 <th>Tahun</th>
                                 <th>Aksi</th>
                             </tr>
@@ -109,16 +113,22 @@ new class extends Component {
                             <tr>
                                 <td>{{ $loop->iteration }}</td>
                                 <td>
-                                    [{{ $item->subKegiatan->kegiatan->program->subSkpd->skpd->kode }}]
-                                    <br>
-                                    {{ $item->subKegiatan->kegiatan->program->subSkpd->skpd->nama }}
-                                    <br>
+                                <span class="badge badge-primary">
+                                    {{ $item->subKegiatan->kegiatan->program->subSkpd->skpd->urusanPelaksana->kode }}.{{ $item->subKegiatan->kegiatan->program->subSkpd->skpd->kode }}.{{ $item->subKegiatan->kegiatan->program->subSkpd->kode }}<br>
+                                </span><br>
                                     {{ $item->subKegiatan->kegiatan->program->subSkpd->nama }}
                                 </td>
-
-                                <td>{{ $item->subRincianObyekAkun->rincianObyekAkun->obyekAkun->jenisAkun->kelompokAkun->akun->nama }} - {{ $item->subRincianObyekAkun->rincianObyekAkun->obyekAkun->jenisAkun->kelompokAkun->nama }} - {{ $item->subRincianObyekAkun->rincianObyekAkun->obyekAkun->jenisAkun->nama }} - {{ $item->subRincianObyekAkun->rincianObyekAkun->obyekAkun->nama }} - {{ $item->subRincianObyekAkun->rincianObyekAkun->nama }}</td>
+                                <td>
+                                <span class="badge badge-secondary">
+                                    {{ $item->subKegiatan->kegiatan->program->kode }}.{{ $item->subKegiatan->kegiatan->kode }}.{{ $item->subKegiatan->kode }}<br>
+                                </span><br>{{ $item->subKegiatan->nama }}
+                                </td>
+                                <td>
+                                <span class="badge badge-danger">
+                                    {{ $item->subRincianObyekAkun->rincianObyekAkun->obyekAkun->jenisAkun->kelompokAkun->kode }}.{{ $item->subRincianObyekAkun->rincianObyekAkun->obyekAkun->jenisAkun->kode }}.{{ $item->subRincianObyekAkun->rincianObyekAkun->obyekAkun->kode }}.{{ $item->subRincianObyekAkun->rincianObyekAkun->kode }}.{{ $item->subRincianObyekAkun->kode }}<br>
+                                </span><br>{{ $item->subRincianObyekAkun->nama }}
+                                </td>
                                 <td>{{ $item->nilai_anggaran }}</td>
-                                <td>{{ $item->nilai_realisasi }}</td>
                                 <td>{{ $item->tahun }}</td>
                                 <td>
                                     <button class="btn btn-primary btn-sm" wire:click="edit({{ $item->id }})" data-bs-toggle="modal" data-bs-target="#modalEdit">
@@ -201,8 +211,6 @@ new class extends Component {
                     }
                 });
             });
-
-
         });
 
     </script>
