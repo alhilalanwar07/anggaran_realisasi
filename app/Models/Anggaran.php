@@ -37,4 +37,9 @@ class Anggaran extends Model
     {
         return $this->belongsTo(SubRincianObyekAkun::class);
     }
+
+    public function realisasi()
+    {
+        return $this->hasOne(Realisasi::class);
+    }
 }

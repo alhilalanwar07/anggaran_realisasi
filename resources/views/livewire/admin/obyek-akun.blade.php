@@ -129,9 +129,21 @@ new class extends Component {
                 </div>
             </div>
             <div class="card-body">
+                <div class="card-head-row">
+                    <div class="d-flex mb-3 justify-content-between gap-2">
+                        <select wire:model.live="paginate" class="form-select w-auto">
+                            <option value="10">10</option>
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                            <option value="500">500</option>
+                        </select>
+                        <input wire:model.live="search" type="text" class="form-control w-auto" placeholder="Cari Obyek Akun...">
+                    </div>
+                </div>
                 <div class="table-responsive">
                     <table class="table table-hover">
-                        <thead>
+                        <thead class="thead-light">
                             <tr>
                                 <th>#</th>
                                 <th>Jenis Akun</th>

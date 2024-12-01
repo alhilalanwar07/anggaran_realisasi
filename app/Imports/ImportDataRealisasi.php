@@ -13,22 +13,12 @@ class ImportDataRealisasi implements ToCollection, WithHeadingRow
     {
         \DB::transaction(function() use ($rows) {
             foreach ($rows as $row) {
-                // Validate required fields
-                if (empty($row['kode_urusan']) || empty($row['nama_urusan'])) {
-                    continue; // Skip this row if required fields are missing
-                }
+                // Find anggaran by sub_kegiatan_id and sub_rincian_obyek_akun_id
+                $anggaran = Anggaran::where('sub_kegiatan_id', $row['sub_kegiatan_id'])
+                    ->where('sub_rincian_obyek_akun_id', $row['sub_rincian_obyek_akun_id'])
+                    ->first();
 
-                //
-
-                // Find the existing Anggaran record
-                $anggaran = Anggaran::where();
-
-                // Update nilai_realisasi if Anggaran record exists
-                if ($anggaran) {
-                    $anggaran->update([
-                        'nilai_realisasi' => $row['nilai_realisasi']
-                    ]);
-                }
+                // 
             }
         });
     }

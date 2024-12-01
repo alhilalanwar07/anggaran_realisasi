@@ -129,9 +129,21 @@ new class extends Component {
                 </div>
             </div>
             <div class="card-body">
+                <div class="card-head-row">
+                    <div class="d-flex mb-3 justify-content-between gap-2">
+                        <select wire:model.live="paginate" class="form-select w-auto">
+                            <option value="10">10</option>
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                            <option value="500">500</option>
+                        </select>
+                        <input wire:model.live="search" type="text" class="form-control w-auto" placeholder="Cari Sub Rincian Obyek Akun...">
+                    </div>
+                </div>
                 <div class="table-responsive">
                     <table class="table table-hover">
-                        <thead>
+                        <thead class="thead-light">
                             <tr>
                                 <th>#</th>
                                 <th>Rincian Obyek Akun</th>
@@ -145,11 +157,11 @@ new class extends Component {
                                 <td>{{ $loop->iteration }}</td>
                                 <td>[{{ $item->rincianObyekAkun->obyekAkun->jenisAkun->kelompokAkun->akun->kode }}.{{ $item->rincianObyekAkun->obyekAkun->jenisAkun->kelompokAkun->kode }}.{{ $item->rincianObyekAkun->obyekAkun->jenisAkun->kode }}.{{ $item->rincianObyekAkun->obyekAkun->kode }}.{{ $item->rincianObyekAkun->kode }}] {{ $item->rincianObyekAkun->nama }}</td>
                                 <td>[{{ $item->kode }}] {{ $item->nama }}</td>
-                                <td>
-                                    <button class="btn btn-primary btn-sm" wire:click="edit({{ $item->id }})" data-bs-toggle="modal" data-bs-target="#modalEdit">
+                                <td class="gap-2">
+                                    <button class="btn btn-primary btn-sm mb-2" wire:click="edit({{ $item->id }})" data-bs-toggle="modal" data-bs-target="#modalEdit">
                                         <i class="fa fa-edit"></i>
                                     </button>
-                                    <button class="btn btn-danger btn-sm" wire:click="confirmDelete({{ $item->id }})">
+                                    <button class="btn btn-danger btn-sm mb-2" wire:click="confirmDelete({{ $item->id }})">
                                         <i class="fa fa-trash"></i>
                                     </button>
                                 </td>
