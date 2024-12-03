@@ -90,14 +90,33 @@ new class extends Component {
                         <span class="sidebar-mini-icon">
                             <i class="fa fa-ellipsis-h"></i>
                         </span>
+                        <h4 class="text-section">Output</h4>
+                    </li>
+                    <li class="nav-item {{ Route::is('laporan') ? 'active text-info' : '' }}">
+                        <a class="nav-link" href="{{ route('laporan') }}" wire:navigate>
+                            <i class="fas fa-print"></i>
+                            <p>Laporan</p>
+                        </a>
+                    </li>
+                    <li class="nav-section">
+                        <span class="sidebar-mini-icon">
+                            <i class="fa fa-ellipsis-h"></i>
+                        </span>
                         <h4 class="text-section">Settings</h4>
                     </li>
                     <li class="nav-item {{ Route::is('user') ? 'active text-info' : '' }}">
                         <a class="nav-link" href="{{ route('user') }}" wire:navigate>
-                            <i class="fas fa-user"></i>
+                            <i class="fas fa-users"></i>
                             <p>Manajemen User</p>
                         </a>
                     </li>
+                    <li class="nav-item {{ Route::is('profile') ? 'active text-info' : '' }}">
+                        <a class="nav-link" href="{{ route('profile') }}" wire:navigate>
+                            <i class="fas fa-user"></i>
+                            <p>Profil</p>
+                        </a>
+                    </li>
+
 
                     <br>
                     <div class="px-4">

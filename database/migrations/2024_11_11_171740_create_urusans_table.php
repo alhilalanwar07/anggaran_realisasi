@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('urusans', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('kode', 50)->unique();
-            $table->string('nama', 255);
+            $table->text('nama');
             $table->timestamps();
         });
     }

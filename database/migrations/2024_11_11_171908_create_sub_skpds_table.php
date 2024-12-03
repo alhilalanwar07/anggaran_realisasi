@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('sub_skpds', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('kode', 50);
-            $table->string('nama', 255);
+            $table->text('nama');
             $table->unsignedBigInteger('skpd_id')->nullable();
             $table->timestamps();
 

@@ -95,8 +95,11 @@ class ImportData implements ToCollection, WithHeadingRow
                     $subRincianObyekAkun = SubRincianObyekAkun::insertIfNotDuplicate($row['kode_akun_sub_rincian_obyek'], $row['nama_akun_sub_rincian_obyek'], $rincianObyekAkun->id);
                 }
 
+                // dapatkan kode gabungan untuk di kolom kode di tabel anggaran
+                $kode = $row['kode_urusan'] . '.' . $row['kode_urusan_pelaksana'] . '.' . $row['kode_skpd'] . '.' . $row['kode_sub_skpd'] . '.' . $row['kode_program'] . '.' . $row['kode_kegiatan'] . '.' . $row['kode_sub_kegiatan'] . '.' . $row['kode_akun'] . '.' . $row['kode_akun_kelompok'] . '.' . $row['kode_akun_jenis'] . '.' . $row['kode_akun_obyek'] . '.' . $row['kode_akun_rincian_obyek'] . '.' . $row['kode_akun_sub_rincian_obyek'];
+
                 // Anggaran
-                if (!empty($row['nilai_anggaran']) && !empty($row['nilai_realisasi']) && !empty($row['tahun'])) {
+                if (!empty($row['nilai_anggaran']) && !empty($row['tahun'])) {
                     Anggaran::updateOrCreate(
                         [
                             'sub_kegiatan_id' => $subKegiatan->id,
@@ -105,7 +108,8 @@ class ImportData implements ToCollection, WithHeadingRow
                         [
                             'nilai_anggaran' => $row['nilai_anggaran'],
                             // 'nilai_realisasi' => 0,
-                            'tahun' => $row['tahun']
+                            'tahun' => $row['tahun'],
+                            'kode' => $kode
                         ]
                     );
                 }

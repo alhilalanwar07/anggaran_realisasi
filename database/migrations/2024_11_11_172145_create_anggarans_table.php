@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('anggarans', function (Blueprint $table) {
             $table->bigIncrements('id');
+            $table->string('kode', 255)->nullable();
             $table->unsignedBigInteger('sub_kegiatan_id');
             $table->unsignedBigInteger('sub_rincian_obyek_akun_id');
             $table->decimal('nilai_anggaran', 20, 2)->default(0);

@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('kegiatans', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('kode', 50);
-            $table->string('nama', 255);
+            $table->text('nama');
             $table->unsignedBigInteger('program_id')->nullable();
             $table->timestamps();
 

@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 class Anggaran extends Model
 {
     protected $table = 'anggarans';
-    protected $fillable = ['nilai_anggaran','nilai_realisasi','tahun','sub_kegiatan_id','sub_rincian_obyek_akun_id'];
+    protected $fillable = ['nilai_anggaran','nilai_realisasi','tahun','sub_kegiatan_id','sub_rincian_obyek_akun_id', 'kode'];
 
     // Accessor for nilai_anggaran
     protected function nilaiAnggaran(): Attribute

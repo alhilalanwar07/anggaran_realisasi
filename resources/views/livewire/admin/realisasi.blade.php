@@ -21,6 +21,7 @@ use Livewire\WithFileUploads;
 use App\Imports\ImportDataRealisasi;
 use Maatwebsite\Excel\Facades\Excel;
 
+
 new class extends Component {
     use WithPagination, WithFileUploads;
 
@@ -44,6 +45,33 @@ new class extends Component {
                         ->orderBy('tahun', 'desc')
                         ->paginate($this->paginate)
         ];
+    }
+
+    public function importExcel()
+    {
+        $this->validate([
+            'file' => 'required|mimes:xlsx'
+        ], [
+            'file.required' => 'File tidak boleh kosong',
+            'file.mimes' => 'File harus berformat xlsx'
+        ]);
+
+        try {
+            $file = $this->file;
+            $fileName = time() . '.' . $file->getClientOriginalExtension();
+            $file->storeAs('excel', $fileName);
+
+            $path = storage_path('app/private/excel/' . $fileName);
+
+            Excel::import(new ImportDataRealisasi, $path);
+
+            $this->progress = 100;
+            $this->dispatch('progressUpdated', $this->progress);
+            $this->reset(['file']);
+            $this->dispatch('tambahAlertToast');
+        } catch (\Exception $e) {
+            $this->dispatch('errorAlertToast', $e->getMessage());
+        }
     }
 
     public function close()
@@ -89,19 +117,19 @@ new class extends Component {
                                 <td>{{ $loop->iteration }}</td>
                                 <td>
                                 <span class="badge badge-primary">
-                                    {{ $item->anggaran->subKegiatan->kegiatan->program->subSkpd->skpd->urusanPelaksana->kode }}.{{ $item->subKegiatan->kegiatan->program->subSkpd->skpd->kode }}.{{ $item->subKegiatan->kegiatan->program->subSkpd->kode }}<br>
+                                    {{ $item->anggaran_id && $item->anggaran->subKegiatan && $item->anggaran->subKegiatan->kegiatan && $item->anggaran->subKegiatan->kegiatan->program && $item->anggaran->subKegiatan->kegiatan->program->subSkpd && $item->anggaran->subKegiatan->kegiatan->program->subSkpd->skpd && $item->anggaran->subKegiatan->kegiatan->program->subSkpd->skpd->urusanPelaksana ? $item->anggaran->subKegiatan->kegiatan->program->subSkpd->skpd->urusanPelaksana->kode : 'null' }}.{{ $item->anggaran_id && $item->anggaran->subKegiatan && $item->anggaran->subKegiatan->kegiatan && $item->anggaran->subKegiatan->kegiatan->program && $item->anggaran->subKegiatan->kegiatan->program->subSkpd && $item->anggaran->subKegiatan->kegiatan->program->subSkpd->skpd ? $item->anggaran->subKegiatan->kegiatan->program->subSkpd->skpd->kode : 'null' }}.{{ $item->anggaran_id && $item->anggaran->subKegiatan && $item->anggaran->subKegiatan->kegiatan && $item->anggaran->subKegiatan->kegiatan->program && $item->anggaran->subKegiatan->kegiatan->program->subSkpd ? $item->anggaran->subKegiatan->kegiatan->program->subSkpd->kode : 'null' }}<br>
                                 </span><br>
-                                    {{ $item->anggaran->subKegiatan->kegiatan->program->subSkpd->nama }}
+                                    {{ $item->anggaran_id && $item->anggaran->subKegiatan && $item->anggaran->subKegiatan->kegiatan && $item->anggaran->subKegiatan->kegiatan->program && $item->anggaran->subKegiatan->kegiatan->program->subSkpd ? $item->anggaran->subKegiatan->kegiatan->program->subSkpd->nama : 'null' }}
                                 </td>
                                 <td>
                                 <span class="badge badge-secondary">
-                                    {{ $item->anggaran->subKegiatan->kegiatan->program->kode }}.{{ $item->subKegiatan->kegiatan->kode }}.{{ $item->subKegiatan->kode }}<br>
-                                </span><br>{{ $item->subKegiatan->nama }}
+                                    {{ $item->anggaran_id && $item->anggaran->subKegiatan && $item->anggaran->subKegiatan->kegiatan && $item->anggaran->subKegiatan->kegiatan->program ? $item->anggaran->subKegiatan->kegiatan->program->kode : 'null' }}.{{ $item->anggaran_id && $item->anggaran->subKegiatan && $item->anggaran->subKegiatan->kegiatan ? $item->anggaran->subKegiatan->kegiatan->kode : 'null' }}.{{ $item->anggaran_id && $item->anggaran->subKegiatan ? $item->anggaran->subKegiatan->kode : 'null' }}<br>
+                                </span><br>{{ $item->anggaran_id && $item->anggaran->subKegiatan ? $item->anggaran->subKegiatan->nama : 'null' }}
                                 </td>
                                 <td>
                                 <span class="badge badge-danger">
-                                    {{ $item->anggaran->subRincianObyekAkun->rincianObyekAkun->obyekAkun->jenisAkun->kelompokAkun->kode }}.{{ $item->subRincianObyekAkun->rincianObyekAkun->obyekAkun->jenisAkun->kode }}.{{ $item->subRincianObyekAkun->rincianObyekAkun->obyekAkun->kode }}.{{ $item->subRincianObyekAkun->rincianObyekAkun->kode }}.{{ $item->subRincianObyekAkun->kode }}<br>
-                                </span><br>{{ $item->subRincianObyekAkun->nama }}
+                                    {{ $item->anggaran_id && $item->anggaran->subRincianObyekAkun && $item->anggaran->subRincianObyekAkun->rincianObyekAkun && $item->anggaran->subRincianObyekAkun->rincianObyekAkun->obyekAkun && $item->anggaran->subRincianObyekAkun->rincianObyekAkun->obyekAkun->jenisAkun && $item->anggaran->subRincianObyekAkun->rincianObyekAkun->obyekAkun->jenisAkun->kelompokAkun ? $item->anggaran->subRincianObyekAkun->rincianObyekAkun->obyekAkun->jenisAkun->kelompokAkun->kode : 'null' }}.{{ $item->anggaran_id && $item->anggaran->subRincianObyekAkun && $item->anggaran->subRincianObyekAkun->rincianObyekAkun && $item->anggaran->subRincianObyekAkun->rincianObyekAkun->obyekAkun && $item->anggaran->subRincianObyekAkun->rincianObyekAkun->obyekAkun->jenisAkun ? $item->anggaran->subRincianObyekAkun->rincianObyekAkun->obyekAkun->jenisAkun->kode : 'null' }}.{{ $item->anggaran_id && $item->anggaran->subRincianObyekAkun && $item->anggaran->subRincianObyekAkun->rincianObyekAkun && $item->anggaran->subRincianObyekAkun->rincianObyekAkun->obyekAkun ? $item->anggaran->subRincianObyekAkun->rincianObyekAkun->obyekAkun->kode : 'null' }}.{{ $item->anggaran_id && $item->anggaran->subRincianObyekAkun && $item->anggaran->subRincianObyekAkun->rincianObyekAkun ? $item->anggaran->subRincianObyekAkun->rincianObyekAkun->kode : 'null' }}.{{ $item->anggaran_id && $item->anggaran->subRincianObyekAkun ? $item->anggaran->subRincianObyekAkun->kode : 'null' }}<br>
+                                </span><br>{{ $item->anggaran_id && $item->anggaran->subRincianObyekAkun ? $item->anggaran->subRincianObyekAkun->nama : 'null' }}
                                 </td>
                                 <td>{{ $item->nilai_realisasi }}</td>
                                 <td>{{ $item->tahun }}</td>

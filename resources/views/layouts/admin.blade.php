@@ -65,7 +65,6 @@
             </footer>
         </div>
     </div>
-
     <!--   Core JS Files   -->
     <script src="{{ url('/') }}/assets/js/core/jquery-3.7.1.min.js" data-navigate-track></script>
     <script src="{{ url('/') }}/assets/js/core/popper.min.js" data-navigate-track></script>
@@ -98,6 +97,9 @@
 
     <!-- Kaiadmin JS -->
     <script src="{{ url('/') }}/assets/js/kaiadmin.min.js" data-navigate-track></script>
+
+
+
 
     @stack('script')
     @stack('scripts')

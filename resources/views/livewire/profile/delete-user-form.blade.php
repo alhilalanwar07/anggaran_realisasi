@@ -8,9 +8,6 @@ new class extends Component
 {
     public string $password = '';
 
-    /**
-     * Delete the currently authenticated user.
-     */
     public function deleteUser(Logout $logout): void
     {
         $this->validate([
@@ -34,14 +31,13 @@ new class extends Component
         </p>
     </header>
 
-    <x-danger-button
-        x-data=""
-        x-on:click.prevent="$dispatch('open-modal', 'confirm-user-deletion')"
-    >{{ __('Delete Account') }}</x-danger-button>
+    <!-- Usage in delete-user-form.blade.php -->
+    <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#confirm-user-deletion">
+        {{ __('Delete Account') }}
+    </button>
 
-    <x-modal name="confirm-user-deletion" :show="$errors->isNotEmpty()" focusable>
-        <form wire:submit="deleteUser" class="p-6">
-
+    <x-modal name="confirm-user-deletion" maxWidth="md" title="{{ __('Delete Account') }}">
+        <form wire:submit.prevent="deleteUser" class="p-6">
             <h2 class="text-lg font-medium text-gray-900">
                 {{ __('Are you sure you want to delete your account?') }}
             </h2>
@@ -50,30 +46,31 @@ new class extends Component
                 {{ __('Once your account is deleted, all of its resources and data will be permanently deleted. Please enter your password to confirm you would like to permanently delete your account.') }}
             </p>
 
-            <div class="mt-6">
-                <x-input-label for="password" value="{{ __('Password') }}" class="sr-only" />
-
-                <x-text-input
-                    wire:model="password"
-                    id="password"
-                    name="password"
-                    type="password"
-                    class="mt-1 block w-3/4"
-                    placeholder="{{ __('Password') }}"
-                />
-
-                <x-input-error :messages="$errors->get('password')" class="mt-2" />
+            <div class="mt-6 mb-3">
+                <label for="password" class="sr-only">{{ __('Password') }}</label>
+                <input wire:model="password" id="password" name="password" type="password" class="form-control mt-1 block w-3/4" placeholder="{{ __('Password') }}" />
+                @error('password') <span class="text-danger">{{ $message }}</span> @enderror
             </div>
 
-            <div class="mt-6 flex justify-end">
-                <x-secondary-button x-on:click="$dispatch('close')">
+            <div class="mt-6 d-flex justify-content-end">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                     {{ __('Cancel') }}
-                </x-secondary-button>
-
-                <x-danger-button class="ms-3">
+                </button>
+                <button type="submit" class="btn btn-danger ms-3">
                     {{ __('Delete Account') }}
-                </x-danger-button>
+                </button>
             </div>
         </form>
     </x-modal>
+
+    @push('script')
+    <script>
+        // Initialize Bootstrap modals
+        document.addEventListener('livewire:initialized', () => {
+            const myModalEl = document.getElementById('confirm-user-deletion')
+            const modal = new bootstrap.Modal(myModalEl)
+        });
+
+    </script>
+    @endpush
 </section>
