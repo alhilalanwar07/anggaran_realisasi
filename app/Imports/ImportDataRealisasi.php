@@ -34,6 +34,13 @@ class ImportDataRealisasi implements ToCollection, WithHeadingRow
                     'tahun' => $row['tahun'],
                     'kode' => $kode,
                 ]);
+
+                //update nilai_realisasi di anggaran
+                if ($anggaran) {
+                    $anggaran->update([
+                        'nilai_realisasi' => $anggaran->nilai_realisasi + $row['nilai_realisasi']
+                    ]);
+                }
             }
         });
     }

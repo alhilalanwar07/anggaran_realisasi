@@ -73,7 +73,7 @@ new class extends Component
         </p>
     </header>
 
-    <form wire:submit="updateProfileInformation" class="mt-6 space-y-6">
+    <form wire:submit="updateProfileInformation" class="mt-6">
         <div class="form-group">
             <x-input-label for="name" :value="__('Name')" />
             <x-text-input wire:model="name" id="name" name="name" type="text" class="form-control mt-1 block w-full" required autofocus autocomplete="name" />
@@ -104,7 +104,7 @@ new class extends Component
             @endif
         </div>
 
-        <div class="flex items-center gap-4">
+        <div class="form-group  flex items-center gap-4">
             <x-primary-button class="btn btn-primary">{{ __('Save') }}</x-primary-button>
 
             <x-action-message class="me-3" on="profile-updated">
