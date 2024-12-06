@@ -163,12 +163,12 @@ new class extends Component {
                         <div class="form-group mb-3">
                             <label for="file">File Excel</label>
                             <div x-data="{ uploading: false, progress: 0 }" x-on:livewire-upload-start="uploading = true" x-on:livewire-upload-finish="uploading = false" x-on:livewire-upload-cancel="uploading = false" x-on:livewire-upload-error="uploading = false" x-on:livewire-upload-progress="progress = $event.detail.progress">
-                                <input type="file" class="form-control" id="file" wire:model="file" wire:loading.attr="disabled" accept=".xlsx">
+                                <input type="file" class="form-control @error('file') is-invalid @enderror" id="file" wire:model="file" wire:loading.attr="disabled" accept=".xlsx">
                                 <div x-show="uploading" class="progress mt-3">
                                     <div class="progress-bar" role="progressbar" :style="{ width: progress + '%' }" aria-valuenow="progress" aria-valuemin="0" aria-valuemax="100" x-text="progress + '%'"></div>
                                 </div>
                             </div>
-                            @error('file') <span class="error">{{ $message }}</span> @enderror
+                            @error('file') <span class="error text-danger ">{{ $message }}</span> @enderror
                         </div>
                     </div>
                     <div class="modal-footer">

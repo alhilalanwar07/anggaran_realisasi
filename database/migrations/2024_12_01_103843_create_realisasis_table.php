@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('realisasis', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('anggaran_id')->nullable();
-            $table->string('kode', 50)->nullable();
+            $table->string('kode', 255)->nullable();
             $table->decimal('nilai_realisasi', 20, 2)->default(0);
             $table->string('tahun', 4)->nullable();
             $table->foreign('anggaran_id')->references('id')->on('anggarans')->onDelete('cascade');

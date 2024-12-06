@@ -40,6 +40,6 @@ class Anggaran extends Model
 
     public function realisasi()
     {
-        return $this->hasOne(Realisasi::class);
+        return $this->hasMany(Realisasi::class);
     }
 }

@@ -56,7 +56,7 @@ new class extends Component {
             'file.mimes' => 'File harus berformat xlsx'
         ]);
 
-        try {
+       // try {
             $file = $this->file;
             $fileName = time() . '.' . $file->getClientOriginalExtension();
             $file->storeAs('excel', $fileName);
@@ -69,9 +69,9 @@ new class extends Component {
             $this->dispatch('progressUpdated', $this->progress);
             $this->reset(['file']);
             $this->dispatch('tambahAlertToast');
-        } catch (\Exception $e) {
-            $this->dispatch('errorAlertToast', $e->getMessage());
-        }
+        //} catch (\Exception $e) {
+       //     $this->dispatch('errorAlertToast', $e->getMessage());
+       // }
     }
 
     public function close()

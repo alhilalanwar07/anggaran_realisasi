@@ -19,14 +19,19 @@ class ImportDataRealisasi implements ToCollection, WithHeadingRow
 
                 // $kode = $row['kode_urusan'] . $row['kode_urusan_pelaksana'] . $row['kode_skpd'] . $row['kode_sub_skpd'] . $row['kode_program'] . $row['kode_kegiatan'] . $row['kode_sub_kegiatan'] . $row['kode_akun'] . $row['kode_akun_kelompok'] . $row['kode_akun_jenis'] . $row['kode_akun_obyek'] . $row['kode_akun_rincian_obyek'] . $row['kode_akun_sub_rincian_obyek'];
 
-                if ($row->contains('#N/A')) {
-                    continue;
-                }
+                // if ($row->contains('#N/A')) {
+                //     continue;
+                // }
 
                 $kode = $row['kode_urusan'] . '.' . $row['kode_urusan_pelaksana'] . '.' . $row['kode_skpd'] . '.' . $row['kode_sub_skpd'] . '.' . $row['kode_program'] . '.' . $row['kode_kegiatan'] . '.' . $row['kode_sub_kegiatan'] . '.' . $row['kode_akun'] . '.' . $row['kode_akun_kelompok'] . '.' . $row['kode_akun_jenis'] . '.' . $row['kode_akun_obyek'] . '.' . $row['kode_akun_rincian_obyek'] . '.' . $row['kode_akun_sub_rincian_obyek'];
 
                 $anggaran = Anggaran::where('kode', $kode)->where('tahun', $row['tahun'])->first();
                 $anggaran_id = $anggaran ? $anggaran->id : null;
+
+                //jika nilai_realisasi = -, maka beri nilai 0
+                if ($row['nilai_realisasi'] == '-') {
+                    $row['nilai_realisasi'] = 0;
+                }
 
                 Realisasi::create([
                     'anggaran_id' => $anggaran_id,
@@ -34,13 +39,6 @@ class ImportDataRealisasi implements ToCollection, WithHeadingRow
                     'tahun' => $row['tahun'],
                     'kode' => $kode,
                 ]);
-
-                //update nilai_realisasi di anggaran
-                if ($anggaran) {
-                    $anggaran->update([
-                        'nilai_realisasi' => $anggaran->nilai_realisasi + $row['nilai_realisasi']
-                    ]);
-                }
             }
         });
     }
