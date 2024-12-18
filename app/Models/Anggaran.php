@@ -10,6 +10,12 @@ class Anggaran extends Model
     protected $table = 'anggarans';
     protected $fillable = ['nilai_anggaran','nilai_realisasi','tahun','sub_kegiatan_id','sub_rincian_obyek_akun_id', 'kode'];
 
+    // sum nilai_anggaran
+    public function scopeSumNilaiAnggaran($query)
+    {
+        return $query->sum('nilai_anggaran');
+    }
+
     // Accessor for nilai_anggaran
     protected function nilaiAnggaran(): Attribute
     {
@@ -26,6 +32,17 @@ class Anggaran extends Model
             get: fn ($value) => 'Rp ' . number_format($value, 0, ',', '.'),
             set: fn ($value) => str_replace(['Rp ', '.', ','], '', $value)
         );
+    }
+
+    // berikan nilai asli
+    public function getRawNilaiAnggaranAttribute()
+    {
+        return $this->attributes['nilai_anggaran'];
+    }
+
+    public function getRawNilaiRealisasiAttribute()
+    {
+        return $this->attributes['nilai_realisasi'];
     }
 
     public function subKegiatan()
