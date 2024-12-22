@@ -33,4 +33,9 @@ class Realisasi extends Model
     {
         return $this->belongsTo(Anggaran::class);
     }
+
+    public function scopeSumNilaiRealisasi($query)
+    {
+        return $query->sum('nilai_realisasi');
+    }
 }

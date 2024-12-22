@@ -43,7 +43,8 @@ new class extends Component {
         return [
             'realisasi' => Realisasi::where('nilai_realisasi', 'like', '%' . $this->search . '%')
                         ->orderBy('tahun', 'desc')
-                        ->paginate($this->paginate)
+                        ->paginate($this->paginate),
+            'total' => Realisasi::sumNilaiRealisasi()
         ];
     }
 
@@ -86,7 +87,9 @@ new class extends Component {
         <div class="card card-round">
             <div class="card-header">
                 <div class="card-head-row">
-                    <div class="card-title">Realisasi</div>
+                    <div class="card-title">Realisasi
+                        <div class="badge badge-primary">{{ number_format($total, 0, ',', '.') }}</div>
+                    </div>
                     <div class="card-tools">
                         <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalImport">
                             <i class="fa fa-file-excel"></i> &nbsp;Import Excel

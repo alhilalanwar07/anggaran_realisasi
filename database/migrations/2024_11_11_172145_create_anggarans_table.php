@@ -16,8 +16,8 @@ return new class extends Migration
             $table->string('kode', 255)->nullable();
             $table->unsignedBigInteger('sub_kegiatan_id');
             $table->unsignedBigInteger('sub_rincian_obyek_akun_id');
-            $table->decimal('nilai_anggaran', 20, 2)->default(0);
-            $table->decimal('nilai_realisasi', 20, 2)->default(0);
+            $table->decimal('nilai_anggaran', 30, 2)->nullable();
+            $table->decimal('nilai_realisasi', 30, 2)->nullable();
             $table->string('tahun', 4)->nullable();
             $table->timestamps();
 

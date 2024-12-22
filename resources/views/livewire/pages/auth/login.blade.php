@@ -18,13 +18,13 @@ new #[Layout('layouts.guest')] class extends Component
         Session::regenerate();
 
         $this->redirectIntended(default: route('dashboard', absolute: false), navigate: false);
-        
+
     }
 }; ?>
 
 <div>
-    <h2 class="text-2xl font-bold mb-2 text-left">SIUPD</h2>
-    <p class="text-gray-800 mb-8 text-m text-left">Mohon masukkan informasi akun Anda untuk mulai menggunakan SIUPD</p>
+    <h2 class="text-2xl font-bold mb-2 text-left">SIAD</h2>
+    <p class="text-gray-800 mb-8 text-m text-left">Mohon masukkan informasi akun Anda untuk mulai menggunakan SIAD</p>
     <br>
     <p></p>
     <br>

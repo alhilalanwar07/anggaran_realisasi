@@ -7,8 +7,9 @@ use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Illuminate\Support\Collection;
 use App\Models\Realisasi;
+use Maatwebsite\Excel\Concerns\WithChunkReading;
 
-class ImportDataRealisasi implements ToCollection, WithHeadingRow
+class ImportDataRealisasi implements ToCollection, WithHeadingRow, WithChunkReading
 {
     public function collection(Collection $rows)
     {
@@ -25,6 +26,7 @@ class ImportDataRealisasi implements ToCollection, WithHeadingRow
 
                 $kode = $row['kode_urusan'] . '.' . $row['kode_urusan_pelaksana'] . '.' . $row['kode_skpd'] . '.' . $row['kode_sub_skpd'] . '.' . $row['kode_program'] . '.' . $row['kode_kegiatan'] . '.' . $row['kode_sub_kegiatan'] . '.' . $row['kode_akun'] . '.' . $row['kode_akun_kelompok'] . '.' . $row['kode_akun_jenis'] . '.' . $row['kode_akun_obyek'] . '.' . $row['kode_akun_rincian_obyek'] . '.' . $row['kode_akun_sub_rincian_obyek'];
 
+                // if()
                 $anggaran = Anggaran::where('kode', $kode)->where('tahun', $row['tahun'])->first();
                 $anggaran_id = $anggaran ? $anggaran->id : null;
 
@@ -41,5 +43,10 @@ class ImportDataRealisasi implements ToCollection, WithHeadingRow
                 ]);
             }
         });
+    }
+
+    public function chunkSize(): int
+    {
+        return 500;
     }
 }

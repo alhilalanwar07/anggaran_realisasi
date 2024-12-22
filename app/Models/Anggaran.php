@@ -20,8 +20,8 @@ class Anggaran extends Model
     protected function nilaiAnggaran(): Attribute
     {
         return Attribute::make(
-            get: fn ($value) => 'Rp ' . number_format($value, 0, ',', '.'),
-            set: fn ($value) => str_replace(['Rp ', '.', ','], '', $value)
+            get: fn ($value) => 'Rp ' . number_format($value, 2, ',', '.'),
+            set: fn ($value) => str_replace(['Rp ', '.', ','], ['', '', '.'], $value)
         );
     }
 
@@ -29,8 +29,8 @@ class Anggaran extends Model
     protected function nilaiRealisasi(): Attribute
     {
         return Attribute::make(
-            get: fn ($value) => 'Rp ' . number_format($value, 0, ',', '.'),
-            set: fn ($value) => str_replace(['Rp ', '.', ','], '', $value)
+            get: fn ($value) => 'Rp ' . number_format($value, 2, ',', '.'),
+            set: fn ($value) => str_replace(['Rp ', '.', ','], ['', '', '.'], $value)
         );
     }
 

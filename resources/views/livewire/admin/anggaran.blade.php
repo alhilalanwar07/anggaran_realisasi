@@ -41,9 +41,15 @@ new class extends Component {
     public function with(): array
     {
         return [
-            'anggaran' => Anggaran::where('nilai_anggaran', 'like', '%' . $this->search . '%')
-                        ->orderBy('tahun', 'desc')
-                        ->paginate($this->paginate)
+            'anggaran' => Anggaran::whereHas('subKegiatan', function($query) {
+                            $query->where('nama', 'like', '%' . $this->search . '%');
+                        })
+                        ->orWhereHas('subRincianObyekAkun', function($query) {
+                            $query->where('nama', 'like', '%' . $this->search . '%');
+                        })
+                        ->orderBy('nilai_anggaran', 'desc')
+                        ->paginate($this->paginate),
+            'total' => Anggaran::sumNilaiAnggaran()
         ];
     }
 
@@ -68,8 +74,6 @@ new class extends Component {
         $this->dispatch('progressUpdated', $this->progress);
         $this->reset(['file']);
         $this->dispatch('tambahAlertToast');
-
-
     }
 
     public function close()
@@ -83,7 +87,9 @@ new class extends Component {
         <div class="card card-round">
             <div class="card-header">
                 <div class="card-head-row">
-                    <div class="card-title">Anggaran</div>
+                    <div class="card-title">Anggaran
+                        <div class="badge badge-primary">{{ number_format($total, 0, ',', '.') }}</div>
+                    </div>
                     <div class="card-tools">
                         <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalImport">
                             <i class="fa fa-file-excel"></i> &nbsp;Import Excel
@@ -95,6 +101,18 @@ new class extends Component {
                 </div>
             </div>
             <div class="card-body">
+            <div class="card-head-row">
+                    <div class="d-flex mb-3 justify-content-between gap-2">
+                        <select wire:model.live="paginate" class="form-select w-auto">
+                            <option value="10">10</option>
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                            <option value="500">500</option>
+                        </select>
+                        <input wire:model.live="search" type="text" class="form-control w-auto" placeholder="Cari...">
+                    </div>
+                </div>
                 <div class="table-responsive">
                     <table class="table table-hover">
                         <thead>

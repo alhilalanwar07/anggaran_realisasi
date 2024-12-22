@@ -71,14 +71,14 @@
         <div class="left-panel">
             <div class="logo">
                 <img src="{{ asset('assets/img/logo/web-app-manifest-512x512.png') }}" alt="Logo" class="w-24 mb-5">
-                <h1 class="text-2xl font-bold mb-2 text-center">Sistem Informasi Keuangan Pemerintahan Daerah</h1>
+                <h1 class="text-2xl font-bold mb-2 text-center">Sistem Informasi Anggaran Daerah</h1>
                 <p class="text-center">Kabupaten Kolaka Timur</p>
             </div>
         </div>
         <div class="right-panel">
             {{ $slot }}
             <footer class="mt-8 text-sm text-gray-500">
-                &copy; {{ date('Y') }}, SIUPD - Kabupaten Kolaka Timur.
+                &copy; {{ date('Y') }}, SIAD - Kabupaten Kolaka Timur.
             </footer>
         </div>
     </div>

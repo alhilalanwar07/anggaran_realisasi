@@ -18,6 +18,11 @@ use App\Models\Anggaran;
 use App\Models\Realisasi;
 use function Livewire\Volt\{computed, state};
 use Livewire\WithPagination;
+use Asantibanez\LivewireCharts\Models\ColumnChartModel;
+use Asantibanez\LivewireCharts\Models\PieChartModel;
+use Asantibanez\LivewireCharts\Models\LineChartModel;
+
+
 
 new class extends Component {
     use WithPagination;
@@ -39,6 +44,7 @@ new class extends Component {
     public $sub_rincian_obyek_akun_id;
     public $tahun;
     public $realisasi;
+    public $anggaran_id;
 
     public function with(): array
     {
@@ -126,10 +132,101 @@ new class extends Component {
         }
 
         if ($this->tahun) {
-            $query->where('tahun', $this->tahun);
+            $query->whereHas('anggaran',
+                fn($q) => $q->where('tahun', $this->tahun));
         }
 
-        $this->realisasi = $query->whereHas('anggaran')->get();
+        $this->anggaran_id = $query->pluck('anggaran_id')->toArray();
+
+        $this->realisasi = $query->when($this->anggaran_id, function ($q) {
+            return $q->whereIn('anggaran_id', $this->anggaran_id);
+        })->get();
+
+        // Column Chart - Yearly Budget vs Realization
+        $columnChartModel = (new ColumnChartModel())
+            ->setTitle('Anggaran vs Realisasi per Tahun')
+            ->setAnimated(true)
+            ->withoutLegend();
+
+        $years = $this->realisasi->pluck('tahun')->unique();
+
+        foreach($years as $year) {
+            $columnChartModel->addColumn(
+            $year . ' Anggaran',
+            $this->realisasi->where('tahun', $year)->sum('anggaran.rawNilaiAnggaran'),
+            '#2E93fA'
+            );
+            $columnChartModel->addColumn(
+            $year . ' Realisasi',
+            $this->realisasi->where('tahun', $year)->sum('rawNilaiRealisasi'),
+            '#66DA26'
+            );
+        }
+
+        // Line Chart - Monthly Trends
+        $lineChartModel = (new LineChartModel())
+            ->setTitle('Trend Realisasi Bulanan')
+            ->setAnimated(true);
+
+        // Add monthly data points
+        for ($i = 1; $i <= 12; $i++) {
+            $lineChartModel->addPoint(
+            date("F", mktime(0, 0, 0, $i, 1)),
+            $this->realisasi->where('bulan', $i)->sum('rawNilaiRealisasi')
+            );
+        }
+
+        // Pie Chart - Budget by SKPD
+        $pieChartModel = (new PieChartModel())
+            ->setTitle('Alokasi Anggaran per SKPD')
+            ->setAnimated(true);
+
+        $skpdData = $this->realisasi->groupBy('skpd_id')
+            ->map(function($items) {
+            return [
+                'nama' => $items->first()->anggaran->subKegiatan->kegiatan->program->subSkpd->skpd->nama,
+                'total' => $items->sum('anggaran.rawNilaiAnggaran')
+            ];
+            });
+
+        foreach($skpdData as $data) {
+            $pieChartModel->addSlice(
+                $data['nama'],
+                $data['total'],
+                '#' . substr(md5($data['nama']), 0, 6)
+            );
+        }
+
+        // pie chart - Anggaran per tahun (akan muncul jika tahun tidak dipilih)
+        $pieChartModel1 = (new PieChartModel())
+            ->setTitle('Alokasi Anggaran per Tahun')
+            ->setAnimated(true);
+
+        $totalAnggaran = $this->realisasi->sum('anggaran.rawNilaiAnggaran');
+
+        $totalRealisasi = $this->realisasi->sum('rawNilaiRealisasi');
+
+        //dd($totalAnggaran, $totalRealisasi);
+
+        $tahunData = $this->realisasi->groupBy('tahun')
+            ->map(function($items) use ($totalAnggaran) {
+            $total = $items->sum('anggaran.rawNilaiAnggaran');
+            $percentage = ($total / $totalAnggaran) * 100;
+            return [
+            'tahun' => $items->first()->tahun,
+            'total' => $total,
+            'percentage' => $percentage
+            ];
+            });
+
+        foreach($tahunData as $data) {
+            $pieChartModel1->addSlice(
+            $data['tahun'] . ' (' . number_format($data['percentage'], 2) . '%)',
+            $data['total'],
+            '#' . substr(md5($data['tahun']), 0, 6)
+            );
+        }
+
 
         return [
             'realisasi' => $this->realisasi,
@@ -147,9 +244,16 @@ new class extends Component {
             'obyekAkun' => $this->jenis_akun_id ? ObyekAkun::where('jenis_akun_id', $this->jenis_akun_id)->orderBy('kode')->get() : [],
             'rincianObyekAkun' => $this->obyek_akun_id ? RincianObyekAkun::where('obyek_akun_id', $this->obyek_akun_id)->orderBy('kode')->get() : [],
             'subRincianObyekAkun' => $this->rincian_obyek_akun_id ? SubRincianObyekAkun::where('rincian_obyek_akun_id', $this->rincian_obyek_akun_id)->orderBy('kode')->get() : [],
-            'tahun' => Anggaran::select('tahun')->distinct()->orderBy('tahun')->get()->pluck('tahun'),
+            'tahun' => $this->tahun ? $this->tahun : [],
+            'columnChartModel' => $columnChartModel,
+            'lineChartModel' => $lineChartModel,
+            'pieChartModel' => $pieChartModel,
+            'pieChartModel1' => $pieChartModel1
+
         ];
     }
+
+
 
     public function resetFilters()
     {
@@ -179,12 +283,7 @@ new class extends Component {
                 <div class="card-head-row">
                     <div class="card-title">Laporan</div>
                     <div class="card-tools">
-                        {{-- <a href="#" class="btn btn-primary btn-round btn-sm">
-                            <span class="btn-label">
-                                <i class="fa fa-print"></i>
-                            </span>
-                            Cetak
-                        </a> --}}
+                        {{-- cetak --}}
                     </div>
                 </div>
             </div>
@@ -200,6 +299,7 @@ new class extends Component {
                                 <option value="{{ $u->id }}">[{{ $u->kode }}] {{ $u->nama }}</option>
                                 @endforeach
                             </select>
+                            <div wire:loading wire:target="urusan_id" class="text-success">Memuat...</div>
                         </div>
                     </div>
 
@@ -213,6 +313,7 @@ new class extends Component {
                                 <option value="{{ $up->id }}">[{{ $up->kode }}] {{ $up->nama }}</option>
                                 @endforeach
                             </select>
+                            <div wire:loading wire:target="urusan_pelaksana_id" class="text-success">Memuat...</div>
                         </div>
                     </div>
 
@@ -226,10 +327,10 @@ new class extends Component {
                                 <option value="{{ $s->id }}">[{{ $s->kode }}] {{ $s->nama }}</option>
                                 @endforeach
                             </select>
+                            <div wire:loading wire:target="skpd_id" class="text-success">Memuat...</div>
                         </div>
                     </div>
 
-                    <!-- Add more filters here -->
                     <!-- Sub SKPD -->
                     <div class="col-md-3">
                         <div class="form-group mb-3">
@@ -240,6 +341,7 @@ new class extends Component {
                                 <option value="{{ $ss->id }}">[{{ $ss->kode }}] {{ $ss->nama }}</option>
                                 @endforeach
                             </select>
+                            <div wire:loading wire:target="sub_skpd_id" class="text-success">Memuat...</div>
                         </div>
                     </div>
 
@@ -253,6 +355,7 @@ new class extends Component {
                                 <option value="{{ $p->id }}">[{{ $p->kode }}] {{ $p->nama }}</option>
                                 @endforeach
                             </select>
+                            <div wire:loading wire:target="program_id" class="text-success">Memuat...</div>
                         </div>
                     </div>
 
@@ -266,6 +369,7 @@ new class extends Component {
                                 <option value="{{ $k->id }}">[{{ $k->kode }}] {{ $k->nama }}</option>
                                 @endforeach
                             </select>
+                            <div wire:loading wire:target="kegiatan_id" class="text-success">Memuat...</div>
                         </div>
                     </div>
 
@@ -279,6 +383,7 @@ new class extends Component {
                                 <option value="{{ $sk->id }}">[{{ $sk->kode }}] {{ $sk->nama }}</option>
                                 @endforeach
                             </select>
+                            <div wire:loading wire:target="sub_kegiatan_id" class="text-success">Memuat...</div>
                         </div>
                     </div>
 
@@ -292,6 +397,7 @@ new class extends Component {
                                 <option value="{{ $a->id }}">[{{ $a->kode }}] {{ $a->nama }}</option>
                                 @endforeach
                             </select>
+                            <div wire:loading wire:target="akun_id" class="text-success">Memuat...</div>
                         </div>
                     </div>
 
@@ -305,6 +411,7 @@ new class extends Component {
                                 <option value="{{ $ka->id }}">[{{ $ka->kode }}] {{ $ka->nama }}</option>
                                 @endforeach
                             </select>
+                            <div wire:loading wire:target="kelompok_akun_id" class="text-success">Memuat...</div>
                         </div>
                     </div>
 
@@ -318,6 +425,7 @@ new class extends Component {
                                 <option value="{{ $ja->id }}">[{{ $ja->kode }}] {{ $ja->nama }}</option>
                                 @endforeach
                             </select>
+                            <div wire:loading wire:target="jenis_akun_id" class="text-success">Memuat...</div>
                         </div>
                     </div>
 
@@ -331,6 +439,7 @@ new class extends Component {
                                 <option value="{{ $oa->id }}">[{{ $oa->kode }}] {{ $oa->nama }}</option>
                                 @endforeach
                             </select>
+                            <div wire:loading wire:target="obyek_akun_id" class="text-success">Memuat...</div>
                         </div>
                     </div>
 
@@ -344,6 +453,7 @@ new class extends Component {
                                 <option value="{{ $roa->id }}">[{{ $roa->kode }}] {{ $roa->nama }}</option>
                                 @endforeach
                             </select>
+                            <div wire:loading wire:target="rincian_obyek_akun_id" class="text-success">Memuat...</div>
                         </div>
                     </div>
 
@@ -357,6 +467,7 @@ new class extends Component {
                                 <option value="{{ $sroa->id }}">[{{ $sroa->kode }}] {{ $sroa->nama }}</option>
                                 @endforeach
                             </select>
+                            <div wire:loading wire:target="sub_rincian_obyek_akun_id" class="text-success">Memuat...</div>
                         </div>
                     </div>
 
@@ -364,75 +475,154 @@ new class extends Component {
                     <div class="col-md-3">
                         <div class="form-group mb-3">
                             <label>Tahun</label>
-                            <select wire:model.live="tahun" class="form-select" @disabled(!$sub_rincian_obyek_akun_id)>
+                            <select wire:model.live="tahun" class="form-select">
                                 <option value="">Pilih Tahun</option>
                                 @for($year = 2021; $year <= 2025; $year++) <option value="{{ $year }}">{{ $year }}</option>
                                     @endfor
                             </select>
+                            <div wire:loading wire:target="tahun" class="text-success">Memuat...</div>
                         </div>
                     </div>
-                {{-- jumlah anggaran --}}
-                    {{-- <div class="col-md-3">
-                        <div class="form-group mb-3">
-                         <label>Jumlah Anggaran</label>
-                                        <div class="card-subtitle">Rp. {{ $nilai_anggaran }}</div>
+
+                    <div class="col-md-6 align-content-end">
+                        <div class="form-group mb-3 d-flex justify-content-end ">
+                            {{-- <label>Cetak</label> --}}
+                            <a href="#" class="btn btn-primary btn-sm btn-block p-3">
+                                <span class="btn-label">
+                                    <i class="fa fa-print"></i>
+                                </span>
+                                Cetak
+                            </a>
                         </div>
                     </div>
-                    <div class="col-md-3">
-                        <div class="form-group mb-3">
-                         <label>Jumlah Realisasi</label>
-                                        <div class="card-subtitle">Rp. {{ number_format((float)$realisasi->sum(fn($item) => (int)$item->nilai_realisasi), 0, ',', '.') }}</div>
-                        </div>
-                    </div> --}}
-                </div>
-
-
-                <!-- Table to display filtered data -->
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>SKPD</th>
-                                <th>Kegiatan</th>
-                                <th>Akun</th>
-                                <th>Nilai Anggaran</th>
-                                <th>Nilai Realisasi</th>
-                                <th>Tahun</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-
-                            {{-- sum nilai realisasi diambil dari anggaran --}}
-                            <tr class="table-info">
-                                <td colspan="4">Total</td>
-                                @php
-                                    //nilai_realisasinya diambil dari $anggaran->nilai_realisasi
-                                @endphp
-                                <td>Rp {{ number_format($realisasi->sum(fn($item) => $item->anggaran->rawNilaiAnggaran), 0, ',', '.') }}</td>
-                                <td>Rp {{ number_format($realisasi->sum(fn($item) => $item->rawNilaiRealisasi), 0, ',', '.') }}</td>
-                                <td></td>
-                            </tr>
-                            @foreach($anggaran as $item)
-                            <tr>
-                                <td>{{ $loop->iteration }}</td>
-                                <td>[{{ $item->anggaran->subKegiatan->kegiatan->program->subSkpd->skpd->kode }}] {{ $item->anggaran->subKegiatan->kegiatan->program->subSkpd->skpd->nama }}</td>
-                                <td>[{{ $item->anggaran->subKegiatan->kegiatan->kode }}] {{ $item->anggaran->subKegiatan->kegiatan->nama }}</td>
-                                <td>[{{ $item->anggaran->subRincianObyekAkun->kode }}] {{ $item->anggaran->subRincianObyekAkun->nama }}</td>
-                                <td>{{ $item->anggaran->nilai_anggaran }}</td>
-                                <td>{{ $item->nilai_realisasi }}</td>
-                                <td>{{ $item->tahun }}</td>
-                            </tr>
-                            @endforeach
-
-                        </tbody>
-                    </table>
-                </div>
-
-                <div class="mt-3">
-                    {{ $anggaran->links() }}
                 </div>
             </div>
         </div>
     </div>
+
+    <div class="accordion accordion-secondary">
+        <div class="card">
+            <div class="card-header" id="headingOne" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                <div class="span-title">
+                    Grafik Laporan
+                </div>
+                <div class="span-mode"></div>
+            </div>
+
+            <div id="collapseOne" class="collapse show" aria-labelledby="headingOne" data-parent="#accordion">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-12 mb-4">
+                            <div class="card card-round">
+                                <div class="card-body">
+                                    <div class="card-title fw-mediumbold">Anggaran vs Realisasi per Tahun</div>
+                                    <div class="card-list"style="height: 500px;">
+                                        <livewire:livewire-column-chart :column-chart-model="$columnChartModel" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-4">
+                            <div class="card card-round">
+                                <div class="card-body">
+                                    <div class="card-title fw-mediumbold">Trend Realisasi Bulanan</div>
+                                    <div class="card-list" style="height: 500px;">
+                                        <livewire:livewire-line-chart :line-chart-model="$lineChartModel" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-12">
+                            <div class="card card-round">
+                                <div class="card-body">
+                                    <div class="card-title fw-mediumbold">Alokasi Anggaran per SKPD</div>
+                                    <div class="card-list" style="height: 500px;">
+                                        <livewire:livewire-pie-chart :pie-chart-model="$pieChartModel" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-12">
+                            <div class="card card-round">
+                                <div class="card-body">
+                                    <div class="card-title fw-mediumbold">Alokasi Anggaran per Tahun</div>
+                                    <div class="card-list" style="height: 500px;">
+                                        <livewire:livewire-pie-chart :pie-chart-model="$pieChartModel1" style="height: 500px;" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {{-- <div class="card">
+            <div class="card-header collapsed" id="headingTwo" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                <div class="span-title">
+                    Tabel Laporan
+                </div>
+                <div class="span-mode"></div>
+            </div>
+            <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordion">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>SKPD</th>
+                                    <th>Kegiatan</th>
+                                    <th>Akun</th>
+                                    <th>Nilai Anggaran</th>
+                                    <th>Nilai Realisasi</th>
+                                    <th>Tahun</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+
+                                <tr class="table-info">
+                                    <td colspan="4">Total</td>
+                                    <td>Rp {{ number_format($realisasi->sum(fn($item) => $item->anggaran->rawNilaiAnggaran), 0, ',', '.') }}</td>
+                                    <td>Rp {{ number_format($realisasi->sum(fn($item) => $item->rawNilaiRealisasi), 0, ',', '.') }}</td>
+                                    <td></td>
+                                </tr>
+                                @foreach($anggaran as $item)
+                                <tr>
+                                    <td>{{ $loop->iteration }}</td>
+                                    <td>[{{ $item->anggaran->subKegiatan->kegiatan->program->subSkpd->skpd->kode }}] {{ $item->anggaran->subKegiatan->kegiatan->program->subSkpd->skpd->nama }}</td>
+                                    <td>[{{ $item->anggaran->subKegiatan->kegiatan->kode }}] {{ $item->anggaran->subKegiatan->kegiatan->nama }}</td>
+                                    <td>[{{ $item->anggaran->subRincianObyekAkun->kode }}] {{ $item->anggaran->subRincianObyekAkun->nama }}</td>
+                                    <td>{{ $item->anggaran->nilai_anggaran }}</td>
+                                    <td>{{ $item->nilai_realisasi }}</td>
+                                    <td>{{ $item->tahun }}</td>
+                                </tr>
+                                @endforeach
+
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="mt-3">
+                        {{ $anggaran->links() }}
+                    </div>
+                </div>
+            </div>
+        </div> --}}
+        <div class="card">
+            <div class="card-header collapsed" id="headingThree" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                <div class="span-title">
+                    Lorem Ipsum #3
+                </div>
+                <div class="span-mode"></div>
+            </div>
+            <div id="collapseThree" class="collapse" aria-labelledby="headingThree" data-parent="#accordion">
+                <div class="card-body">
+                    Anim pariatur cliche reprehenderit, enim eiusmod high life accusamus terry richardson ad squid. 3 wolf moon officia aute, non cupidatat skateboard dolor brunch. Food truck quinoa nesciunt laborum eiusmod. Brunch 3 wolf moon tempor, sunt aliqua put a bird on it squid single-origin coffee nulla assumenda shoreditch et. Nihil anim keffiyeh helvetica, craft beer labore wes anderson cred nesciunt sapiente ea proident. Ad vegan excepteur butcher vice lomo. Leggings occaecat craft beer farm-to-table, raw denim aesthetic synth nesciunt you probably haven't heard of them accusamus labore sustainable VHS.
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
