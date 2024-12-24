@@ -41,8 +41,57 @@ new class extends Component {
     public function with(): array
     {
         return [
-            'realisasi' => Realisasi::where('nilai_realisasi', 'like', '%' . $this->search . '%')
-                        ->orderBy('tahun', 'desc')
+            'realisasi' => Realisasi::with([
+                            'anggaran.subKegiatan.kegiatan.program.subSkpd.skpd.urusanPelaksana',
+                            'anggaran.subKegiatan.kegiatan.program.subSkpd.skpd',
+                            'anggaran.subKegiatan.kegiatan.program.subSkpd',
+                            'anggaran.subKegiatan.kegiatan.program',
+                            'anggaran.subKegiatan.kegiatan',
+                            'anggaran.subKegiatan',
+                            'anggaran.subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun',
+                            'anggaran.subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun',
+                            'anggaran.subRincianObyekAkun.rincianObyekAkun.obyekAkun',
+                            'anggaran.subRincianObyekAkun.rincianObyekAkun',
+                            'anggaran.subRincianObyekAkun'
+                        ])
+                        ->where('tahun', 'like', '%' . $this->tahun . '%')
+                        ->where(function($query) {
+                            $query->where('nilai_realisasi', 'like', '%' . $this->search . '%')
+                                ->orWhereHas('anggaran.subKegiatan.kegiatan.program.subSkpd.skpd.urusanPelaksana', function($query) {
+                                    $query->where('nama', 'like', '%' . $this->search . '%');
+                                })
+                                ->orWhereHas('anggaran.subKegiatan.kegiatan.program.subSkpd.skpd', function($query) {
+                                    $query->where('nama', 'like', '%' . $this->search . '%');
+                                })
+                                ->orWhereHas('anggaran.subKegiatan.kegiatan.program.subSkpd', function($query) {
+                                    $query->where('nama', 'like', '%' . $this->search . '%');
+                                })
+                                ->orWhereHas('anggaran.subKegiatan.kegiatan.program', function($query) {
+                                    $query->where('nama', 'like', '%' . $this->search . '%');
+                                })
+                                ->orWhereHas('anggaran.subKegiatan.kegiatan', function($query) {
+                                    $query->where('nama', 'like', '%' . $this->search . '%');
+                                })
+                                ->orWhereHas('anggaran.subKegiatan', function($query) {
+                                    $query->where('nama', 'like', '%' . $this->search . '%');
+                                })
+                                ->orWhereHas('anggaran.subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun', function($query) {
+                                    $query->where('nama', 'like', '%' . $this->search . '%');
+                                })
+                                ->orWhereHas('anggaran.subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun', function($query) {
+                                    $query->where('nama', 'like', '%' . $this->search . '%');
+                                })
+                                ->orWhereHas('anggaran.subRincianObyekAkun.rincianObyekAkun.obyekAkun', function($query) {
+                                    $query->where('nama', 'like', '%' . $this->search . '%');
+                                })
+                                ->orWhereHas('anggaran.subRincianObyekAkun.rincianObyekAkun', function($query) {
+                                    $query->where('nama', 'like', '%' . $this->search . '%');
+                                })
+                                ->orWhereHas('anggaran.subRincianObyekAkun', function($query) {
+                                    $query->where('nama', 'like', '%' . $this->search . '%');
+                                });
+                        })
+                        ->orderBy('nilai_realisasi', 'desc')
                         ->paginate($this->paginate),
             'total' => Realisasi::sumNilaiRealisasi()
         ];
@@ -57,7 +106,10 @@ new class extends Component {
             'file.mimes' => 'File harus berformat xlsx'
         ]);
 
-       // try {
+        // toast error jika terjadi kesalahan
+
+
+       try {
             $file = $this->file;
             $fileName = time() . '.' . $file->getClientOriginalExtension();
             $file->storeAs('excel', $fileName);
@@ -70,9 +122,9 @@ new class extends Component {
             $this->dispatch('progressUpdated', $this->progress);
             $this->reset(['file']);
             $this->dispatch('tambahAlertToast');
-        //} catch (\Exception $e) {
-       //     $this->dispatch('errorAlertToast', $e->getMessage());
-       // }
+        } catch (\Exception $e) {
+            $this->dispatch('errorAlertToast', $e->getMessage());
+        }
     }
 
     public function close()
@@ -94,13 +146,35 @@ new class extends Component {
                         <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalImport">
                             <i class="fa fa-file-excel"></i> &nbsp;Import Excel
                         </button>
-                        <button class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#modalTambah">
-                            <i class="fa fa-plus"></i> Tambah Realisasi
+                        <button class="btn btn-info btn-sm" wire:click="exportExcel">
+                            <i class="fa fa-download"></i> &nbsp;Export Excel
                         </button>
                     </div>
                 </div>
             </div>
             <div class="card-body">
+                <div class="m-2">
+                    <div class="d-flex mb-3 justify-content-between gap-2">
+                        <div class="d-flex mb-3 justify-content-between gap-2">
+                            <select wire:model.live="paginate" class="form-select w-auto">
+                                <option value="10">10</option>
+                                <option value="25">25</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                                <option value="500">500</option>
+                            </select>
+                            <input wire:model.live="search" type="text" class="form-control w-auto" placeholder="Cari...">
+                        </div>
+                        <div class="">
+                            <select wire:model.live="tahun" class="form-control w-auto">
+                                <option value="">Semua Tahun</option>
+                                @for($i = date('Y'); $i >= 2020; $i--)
+                                <option value="{{ $i }}">{{ $i }}</option>
+                                @endfor
+                            </select>
+                        </div>
+                    </div>
+                </div>
                 <div class="table-responsive">
                     <table class="table table-hover">
                         <thead>
@@ -119,28 +193,28 @@ new class extends Component {
                             <tr>
                                 <td>{{ $loop->iteration }}</td>
                                 <td>
-                                <span class="badge badge-primary">
-                                    {{ $item->anggaran_id && $item->anggaran->subKegiatan && $item->anggaran->subKegiatan->kegiatan && $item->anggaran->subKegiatan->kegiatan->program && $item->anggaran->subKegiatan->kegiatan->program->subSkpd && $item->anggaran->subKegiatan->kegiatan->program->subSkpd->skpd && $item->anggaran->subKegiatan->kegiatan->program->subSkpd->skpd->urusanPelaksana ? $item->anggaran->subKegiatan->kegiatan->program->subSkpd->skpd->urusanPelaksana->kode : 'null' }}.{{ $item->anggaran_id && $item->anggaran->subKegiatan && $item->anggaran->subKegiatan->kegiatan && $item->anggaran->subKegiatan->kegiatan->program && $item->anggaran->subKegiatan->kegiatan->program->subSkpd && $item->anggaran->subKegiatan->kegiatan->program->subSkpd->skpd ? $item->anggaran->subKegiatan->kegiatan->program->subSkpd->skpd->kode : 'null' }}.{{ $item->anggaran_id && $item->anggaran->subKegiatan && $item->anggaran->subKegiatan->kegiatan && $item->anggaran->subKegiatan->kegiatan->program && $item->anggaran->subKegiatan->kegiatan->program->subSkpd ? $item->anggaran->subKegiatan->kegiatan->program->subSkpd->kode : 'null' }}<br>
-                                </span><br>
+                                    <span class="badge badge-primary">
+                                        {{ $item->anggaran_id && $item->anggaran->subKegiatan && $item->anggaran->subKegiatan->kegiatan && $item->anggaran->subKegiatan->kegiatan->program && $item->anggaran->subKegiatan->kegiatan->program->subSkpd && $item->anggaran->subKegiatan->kegiatan->program->subSkpd->skpd && $item->anggaran->subKegiatan->kegiatan->program->subSkpd->skpd->urusanPelaksana ? $item->anggaran->subKegiatan->kegiatan->program->subSkpd->skpd->urusanPelaksana->kode : 'null' }}.{{ $item->anggaran_id && $item->anggaran->subKegiatan && $item->anggaran->subKegiatan->kegiatan && $item->anggaran->subKegiatan->kegiatan->program && $item->anggaran->subKegiatan->kegiatan->program->subSkpd && $item->anggaran->subKegiatan->kegiatan->program->subSkpd->skpd ? $item->anggaran->subKegiatan->kegiatan->program->subSkpd->skpd->kode : 'null' }}.{{ $item->anggaran_id && $item->anggaran->subKegiatan && $item->anggaran->subKegiatan->kegiatan && $item->anggaran->subKegiatan->kegiatan->program && $item->anggaran->subKegiatan->kegiatan->program->subSkpd ? $item->anggaran->subKegiatan->kegiatan->program->subSkpd->kode : 'null' }}<br>
+                                    </span><br>
                                     {{ $item->anggaran_id && $item->anggaran->subKegiatan && $item->anggaran->subKegiatan->kegiatan && $item->anggaran->subKegiatan->kegiatan->program && $item->anggaran->subKegiatan->kegiatan->program->subSkpd ? $item->anggaran->subKegiatan->kegiatan->program->subSkpd->nama : 'null' }}
                                 </td>
                                 <td>
-                                <span class="badge badge-secondary">
-                                    {{ $item->anggaran_id && $item->anggaran->subKegiatan && $item->anggaran->subKegiatan->kegiatan && $item->anggaran->subKegiatan->kegiatan->program ? $item->anggaran->subKegiatan->kegiatan->program->kode : 'null' }}.{{ $item->anggaran_id && $item->anggaran->subKegiatan && $item->anggaran->subKegiatan->kegiatan ? $item->anggaran->subKegiatan->kegiatan->kode : 'null' }}.{{ $item->anggaran_id && $item->anggaran->subKegiatan ? $item->anggaran->subKegiatan->kode : 'null' }}<br>
-                                </span><br>{{ $item->anggaran_id && $item->anggaran->subKegiatan ? $item->anggaran->subKegiatan->nama : 'null' }}
+                                    <span class="badge badge-secondary">
+                                        {{ $item->anggaran_id && $item->anggaran->subKegiatan && $item->anggaran->subKegiatan->kegiatan && $item->anggaran->subKegiatan->kegiatan->program ? $item->anggaran->subKegiatan->kegiatan->program->kode : 'null' }}.{{ $item->anggaran_id && $item->anggaran->subKegiatan && $item->anggaran->subKegiatan->kegiatan ? $item->anggaran->subKegiatan->kegiatan->kode : 'null' }}.{{ $item->anggaran_id && $item->anggaran->subKegiatan ? $item->anggaran->subKegiatan->kode : 'null' }}<br>
+                                    </span><br>{{ $item->anggaran_id && $item->anggaran->subKegiatan ? $item->anggaran->subKegiatan->nama : 'null' }}
                                 </td>
                                 <td>
-                                <span class="badge badge-danger">
-                                    {{ $item->anggaran_id && $item->anggaran->subRincianObyekAkun && $item->anggaran->subRincianObyekAkun->rincianObyekAkun && $item->anggaran->subRincianObyekAkun->rincianObyekAkun->obyekAkun && $item->anggaran->subRincianObyekAkun->rincianObyekAkun->obyekAkun->jenisAkun && $item->anggaran->subRincianObyekAkun->rincianObyekAkun->obyekAkun->jenisAkun->kelompokAkun ? $item->anggaran->subRincianObyekAkun->rincianObyekAkun->obyekAkun->jenisAkun->kelompokAkun->kode : 'null' }}.{{ $item->anggaran_id && $item->anggaran->subRincianObyekAkun && $item->anggaran->subRincianObyekAkun->rincianObyekAkun && $item->anggaran->subRincianObyekAkun->rincianObyekAkun->obyekAkun && $item->anggaran->subRincianObyekAkun->rincianObyekAkun->obyekAkun->jenisAkun ? $item->anggaran->subRincianObyekAkun->rincianObyekAkun->obyekAkun->jenisAkun->kode : 'null' }}.{{ $item->anggaran_id && $item->anggaran->subRincianObyekAkun && $item->anggaran->subRincianObyekAkun->rincianObyekAkun && $item->anggaran->subRincianObyekAkun->rincianObyekAkun->obyekAkun ? $item->anggaran->subRincianObyekAkun->rincianObyekAkun->obyekAkun->kode : 'null' }}.{{ $item->anggaran_id && $item->anggaran->subRincianObyekAkun && $item->anggaran->subRincianObyekAkun->rincianObyekAkun ? $item->anggaran->subRincianObyekAkun->rincianObyekAkun->kode : 'null' }}.{{ $item->anggaran_id && $item->anggaran->subRincianObyekAkun ? $item->anggaran->subRincianObyekAkun->kode : 'null' }}<br>
-                                </span><br>{{ $item->anggaran_id && $item->anggaran->subRincianObyekAkun ? $item->anggaran->subRincianObyekAkun->nama : 'null' }}
+                                    <span class="badge badge-danger">
+                                        {{ $item->anggaran_id && $item->anggaran->subRincianObyekAkun && $item->anggaran->subRincianObyekAkun->rincianObyekAkun && $item->anggaran->subRincianObyekAkun->rincianObyekAkun->obyekAkun && $item->anggaran->subRincianObyekAkun->rincianObyekAkun->obyekAkun->jenisAkun && $item->anggaran->subRincianObyekAkun->rincianObyekAkun->obyekAkun->jenisAkun->kelompokAkun ? $item->anggaran->subRincianObyekAkun->rincianObyekAkun->obyekAkun->jenisAkun->kelompokAkun->kode : 'null' }}.{{ $item->anggaran_id && $item->anggaran->subRincianObyekAkun && $item->anggaran->subRincianObyekAkun->rincianObyekAkun && $item->anggaran->subRincianObyekAkun->rincianObyekAkun->obyekAkun && $item->anggaran->subRincianObyekAkun->rincianObyekAkun->obyekAkun->jenisAkun ? $item->anggaran->subRincianObyekAkun->rincianObyekAkun->obyekAkun->jenisAkun->kode : 'null' }}.{{ $item->anggaran_id && $item->anggaran->subRincianObyekAkun && $item->anggaran->subRincianObyekAkun->rincianObyekAkun && $item->anggaran->subRincianObyekAkun->rincianObyekAkun->obyekAkun ? $item->anggaran->subRincianObyekAkun->rincianObyekAkun->obyekAkun->kode : 'null' }}.{{ $item->anggaran_id && $item->anggaran->subRincianObyekAkun && $item->anggaran->subRincianObyekAkun->rincianObyekAkun ? $item->anggaran->subRincianObyekAkun->rincianObyekAkun->kode : 'null' }}.{{ $item->anggaran_id && $item->anggaran->subRincianObyekAkun ? $item->anggaran->subRincianObyekAkun->kode : 'null' }}<br>
+                                    </span><br>{{ $item->anggaran_id && $item->anggaran->subRincianObyekAkun ? $item->anggaran->subRincianObyekAkun->nama : 'null' }}
                                 </td>
                                 <td>{{ $item->nilai_realisasi }}</td>
                                 <td>{{ $item->tahun }}</td>
                                 <td>
-                                    <button class="btn btn-primary btn-sm" wire:click="edit({{ $item->id }})" data-bs-toggle="modal" data-bs-target="#modalEdit">
+                                    <button class="btn btn-primary btn-sm mb-1" wire:click="edit({{ $item->id }})" data-bs-toggle="modal" data-bs-target="#modalEdit">
                                         <i class="fa fa-edit"></i>
                                     </button>
-                                    <button class="btn btn-danger btn-sm" wire:click="confirmDelete({{ $item->id }})">
+                                    <button class="btn btn-danger btn-sm mb-1" wire:click="confirmDelete({{ $item->id }})">
                                         <i class="fa fa-trash"></i>
                                     </button>
                                 </td>
@@ -169,12 +243,12 @@ new class extends Component {
                         <div class="form-group mb-3">
                             <label for="file">File Excel</label>
                             <div x-data="{ uploading: false, progress: 0 }" x-on:livewire-upload-start="uploading = true" x-on:livewire-upload-finish="uploading = false" x-on:livewire-upload-cancel="uploading = false" x-on:livewire-upload-error="uploading = false" x-on:livewire-upload-progress="progress = $event.detail.progress">
-                                <input type="file" class="form-control" id="file" wire:model="file" wire:loading.attr="disabled" accept=".xlsx">
+                                <input type="file" class="form-control  @error('file') is-invalid @enderror" id="file" wire:model="file" wire:loading.attr="disabled" accept=".xlsx">
                                 <div x-show="uploading" class="progress mt-3">
                                     <div class="progress-bar" role="progressbar" :style="{ width: progress + '%' }" aria-valuenow="progress" aria-valuemin="0" aria-valuemax="100" x-text="progress + '%'"></div>
                                 </div>
                             </div>
-                            @error('file') <span class="error">{{ $message }}</span> @enderror
+                            @error('file') <span class="error text-danger">{{ $message }}</span> @enderror
                         </div>
                     </div>
                     <div class="modal-footer">

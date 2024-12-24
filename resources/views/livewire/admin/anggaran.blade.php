@@ -31,7 +31,9 @@ new class extends Component {
     public $progress = 0; // Untuk melacak progres unggahan
     public $file; // Properti untuk file
 
-    public $nilai_anggaran, $nilai_realisasi, $tahun, $anggaran_id;
+    public $nilai_anggaran, $nilai_realisasi, $anggaran_id;
+
+    public $tahun = '';
 
     public function updatingSearch()
     {
@@ -41,11 +43,38 @@ new class extends Component {
     public function with(): array
     {
         return [
-            'anggaran' => Anggaran::whereHas('subKegiatan', function($query) {
-                            $query->where('nama', 'like', '%' . $this->search . '%');
-                        })
-                        ->orWhereHas('subRincianObyekAkun', function($query) {
-                            $query->where('nama', 'like', '%' . $this->search . '%');
+            'anggaran' => Anggaran::with([
+                            'subKegiatan.kegiatan.program.subSkpd.skpd.urusanPelaksana',
+                            'subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun',
+                            'subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun',
+                            'subRincianObyekAkun.rincianObyekAkun.obyekAkun',
+                            'subRincianObyekAkun.rincianObyekAkun',
+                            'subRincianObyekAkun',
+                            'subKegiatan.kegiatan.program.subSkpd.skpd'
+                        ])
+                        ->where('tahun', 'like', '%' . $this->tahun . '%')
+                        ->where(function($query) {
+                            $query->whereHas('subKegiatan', function($query) {
+                                $query->where('nama', 'like', '%' . $this->search . '%');
+                            })
+                            ->orWhereHas('subKegiatan.kegiatan.program.subSkpd', function($query) {
+                                $query->where('nama', 'like', '%' . $this->search . '%');
+                            })
+                            ->orWhereHas('subKegiatan.kegiatan.program', function($query) {
+                                $query->where('nama', 'like', '%' . $this->search . '%');
+                            })
+                            ->orWhereHas('subKegiatan.kegiatan', function($query) {
+                                $query->where('nama', 'like', '%' . $this->search . '%');
+                            })
+                            ->orWhereHas('subRincianObyekAkun', function($query) {
+                                $query->where('nama', 'like', '%' . $this->search . '%');
+                            })
+                            ->orWhereHas('subKegiatan.kegiatan.program.subSkpd.skpd', function($query) {
+                                $query->where('nama', 'like', '%' . $this->search . '%');
+                            })
+                            ->orWhereHas('subKegiatan.kegiatan.program.subSkpd.skpd.urusanPelaksana', function($query) {
+                                $query->where('nama', 'like', '%' . $this->search . '%');
+                            });
                         })
                         ->orderBy('nilai_anggaran', 'desc')
                         ->paginate($this->paginate),
@@ -94,23 +123,33 @@ new class extends Component {
                         <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalImport">
                             <i class="fa fa-file-excel"></i> &nbsp;Import Excel
                         </button>
-                        <button class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#modalTambah">
-                            <i class="fa fa-plus"></i> Tambah Anggaran
+                        <button class="btn btn-info btn-sm" wire:click="exportExcel">
+                            <i class="fa fa-download"></i> &nbsp;Export Excel
                         </button>
                     </div>
                 </div>
             </div>
             <div class="card-body">
-            <div class="card-head-row">
+                <div class="m-2">
                     <div class="d-flex mb-3 justify-content-between gap-2">
-                        <select wire:model.live="paginate" class="form-select w-auto">
-                            <option value="10">10</option>
-                            <option value="25">25</option>
-                            <option value="50">50</option>
-                            <option value="100">100</option>
-                            <option value="500">500</option>
-                        </select>
-                        <input wire:model.live="search" type="text" class="form-control w-auto" placeholder="Cari...">
+                        <div class="d-flex mb-3 justify-content-between gap-2">
+                            <select wire:model.live="paginate" class="form-select w-auto">
+                                <option value="10">10</option>
+                                <option value="25">25</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                                <option value="500">500</option>
+                            </select>
+                            <input wire:model.live="search" type="text" class="form-control w-auto" placeholder="Cari...">
+                        </div>
+                        <div class="">
+                            <select wire:model.live="tahun" class="form-control w-auto">
+                                <option value="">Semua Tahun</option>
+                                @for($i = date('Y'); $i >= 2020; $i--)
+                                <option value="{{ $i }}">{{ $i }}</option>
+                                @endfor
+                            </select>
+                        </div>
                     </div>
                 </div>
                 <div class="table-responsive">
@@ -131,28 +170,28 @@ new class extends Component {
                             <tr>
                                 <td>{{ $loop->iteration }}</td>
                                 <td>
-                                <span class="badge badge-primary">
-                                    {{ $item->subKegiatan->kegiatan->program->subSkpd->skpd->urusanPelaksana->kode }}.{{ $item->subKegiatan->kegiatan->program->subSkpd->skpd->kode }}.{{ $item->subKegiatan->kegiatan->program->subSkpd->kode }}<br>
-                                </span><br>
+                                    <span class="badge badge-primary">
+                                        {{ $item->subKegiatan->kegiatan->program->subSkpd->skpd->urusanPelaksana->kode }}.{{ $item->subKegiatan->kegiatan->program->subSkpd->skpd->kode }}.{{ $item->subKegiatan->kegiatan->program->subSkpd->kode }}<br>
+                                    </span><br>
                                     {{ $item->subKegiatan->kegiatan->program->subSkpd->nama }}
                                 </td>
                                 <td>
-                                <span class="badge badge-secondary">
-                                    {{ $item->subKegiatan->kegiatan->program->kode }}.{{ $item->subKegiatan->kegiatan->kode }}.{{ $item->subKegiatan->kode }}<br>
-                                </span><br>{{ $item->subKegiatan->nama }}
+                                    <span class="badge badge-secondary">
+                                        {{ $item->subKegiatan->kegiatan->program->kode }}.{{ $item->subKegiatan->kegiatan->kode }}.{{ $item->subKegiatan->kode }}<br>
+                                    </span><br>{{ $item->subKegiatan->nama }}
                                 </td>
                                 <td>
-                                <span class="badge badge-danger">
-                                    {{ $item->subRincianObyekAkun->rincianObyekAkun->obyekAkun->jenisAkun->kelompokAkun->kode }}.{{ $item->subRincianObyekAkun->rincianObyekAkun->obyekAkun->jenisAkun->kode }}.{{ $item->subRincianObyekAkun->rincianObyekAkun->obyekAkun->kode }}.{{ $item->subRincianObyekAkun->rincianObyekAkun->kode }}.{{ $item->subRincianObyekAkun->kode }}<br>
-                                </span><br>{{ $item->subRincianObyekAkun->nama }}
+                                    <span class="badge badge-danger">
+                                        {{ $item->subRincianObyekAkun->rincianObyekAkun->obyekAkun->jenisAkun->kelompokAkun->kode }}.{{ $item->subRincianObyekAkun->rincianObyekAkun->obyekAkun->jenisAkun->kode }}.{{ $item->subRincianObyekAkun->rincianObyekAkun->obyekAkun->kode }}.{{ $item->subRincianObyekAkun->rincianObyekAkun->kode }}.{{ $item->subRincianObyekAkun->kode }}<br>
+                                    </span><br>{{ $item->subRincianObyekAkun->nama }}
                                 </td>
                                 <td>{{ $item->nilai_anggaran }}</td>
                                 <td>{{ $item->tahun }}</td>
                                 <td>
-                                    <button class="btn btn-primary btn-sm" wire:click="edit({{ $item->id }})" data-bs-toggle="modal" data-bs-target="#modalEdit">
+                                    <button class="btn btn-primary btn-sm mb-1" wire:click="edit({{ $item->id }})" data-bs-toggle="modal" data-bs-target="#modalEdit">
                                         <i class="fa fa-edit"></i>
                                     </button>
-                                    <button class="btn btn-danger btn-sm" wire:click="confirmDelete({{ $item->id }})">
+                                    <button class="btn btn-danger btn-sm mb-1" wire:click="confirmDelete({{ $item->id }})">
                                         <i class="fa fa-trash"></i>
                                     </button>
                                 </td>

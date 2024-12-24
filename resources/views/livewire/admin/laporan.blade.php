@@ -151,18 +151,20 @@ new class extends Component {
         $years = $this->realisasi->pluck('tahun')->unique();
 
         foreach($years as $year) {
+            $anggaranSum = $this->realisasi->where('tahun', $year)->sum('anggaran.rawNilaiAnggaran');
+            $realisasiSum = $this->realisasi->where('tahun', $year)->sum('rawNilaiRealisasi');
+
             $columnChartModel->addColumn(
-            $year . ' Anggaran',
-            $this->realisasi->where('tahun', $year)->sum('anggaran.rawNilaiAnggaran'),
-            '#2E93fA'
+                $year . ' Anggaran',
+                $anggaranSum,
+                '#2E93fA'
             );
             $columnChartModel->addColumn(
-            $year . ' Realisasi',
-            $this->realisasi->where('tahun', $year)->sum('rawNilaiRealisasi'),
-            '#66DA26'
+                $year . ' Realisasi',
+                $realisasiSum,
+                '#66DA26'
             );
         }
-
         // Line Chart - Monthly Trends
         $lineChartModel = (new LineChartModel())
             ->setTitle('Trend Realisasi Bulanan')
@@ -253,7 +255,16 @@ new class extends Component {
         ];
     }
 
+    public function formatRupiah($angka)
+    {
+        $hasil_rupiah = "Rp " . number_format($angka, 2, ',', '.');
+        return $hasil_rupiah;
+    }
 
+    public function downloadExcel()
+    {
+        return (new RealisasiExport($this->realisasi))->download('realisasi.xlsx');
+    }
 
     public function resetFilters()
     {
@@ -293,7 +304,7 @@ new class extends Component {
                     <div class="col-md-3">
                         <div class="form-group mb-3">
                             <label>Urusan</label>
-                            <select wire:model.live="urusan_id" class="form-select">
+                            <select wire:model.live="urusan_id" class="form-select" wire:change="with">
                                 <option value="">Pilih Urusan</option>
                                 @foreach($urusan as $u)
                                 <option value="{{ $u->id }}">[{{ $u->kode }}] {{ $u->nama }}</option>
@@ -307,7 +318,7 @@ new class extends Component {
                     <div class="col-md-3">
                         <div class="form-group mb-3">
                             <label>Urusan Pelaksana</label>
-                            <select wire:model.live="urusan_pelaksana_id" class="form-select" @disabled(!$urusan_id)>
+                            <select wire:model.live="urusan_pelaksana_id" class="form-select" @disabled(!$urusan_id) wire:change="with">
                                 <option value="">Pilih Urusan Pelaksana</option>
                                 @foreach($urusanPelaksana as $up)
                                 <option value="{{ $up->id }}">[{{ $up->kode }}] {{ $up->nama }}</option>
@@ -321,7 +332,7 @@ new class extends Component {
                     <div class="col-md-3">
                         <div class="form-group mb-3">
                             <label>SKPD</label>
-                            <select wire:model.live="skpd_id" class="form-select" @disabled(!$urusan_pelaksana_id)>
+                            <select wire:model.live="skpd_id" class="form-select" @disabled(!$urusan_pelaksana_id) wire:change="with">
                                 <option value="">Pilih SKPD</option>
                                 @foreach($skpd as $s)
                                 <option value="{{ $s->id }}">[{{ $s->kode }}] {{ $s->nama }}</option>
@@ -335,7 +346,7 @@ new class extends Component {
                     <div class="col-md-3">
                         <div class="form-group mb-3">
                             <label>Sub SKPD</label>
-                            <select wire:model.live="sub_skpd_id" class="form-select" @disabled(!$skpd_id)>
+                            <select wire:model.live="sub_skpd_id" class="form-select" @disabled(!$skpd_id) wire:change="with">
                                 <option value="">Pilih Sub SKPD</option>
                                 @foreach($subSkpd as $ss)
                                 <option value="{{ $ss->id }}">[{{ $ss->kode }}] {{ $ss->nama }}</option>
@@ -349,7 +360,7 @@ new class extends Component {
                     <div class="col-md-3">
                         <div class="form-group mb-3">
                             <label>Program</label>
-                            <select wire:model.live="program_id" class="form-select" @disabled(!$sub_skpd_id)>
+                            <select wire:model.live="program_id" class="form-select" @disabled(!$sub_skpd_id) wire:change="with">
                                 <option value="">Pilih Program</option>
                                 @foreach($program as $p)
                                 <option value="{{ $p->id }}">[{{ $p->kode }}] {{ $p->nama }}</option>
@@ -363,7 +374,7 @@ new class extends Component {
                     <div class="col-md-3">
                         <div class="form-group mb-3">
                             <label>Kegiatan</label>
-                            <select wire:model.live="kegiatan_id" class="form-select" @disabled(!$program_id)>
+                            <select wire:model.live="kegiatan_id" class="form-select" @disabled(!$program_id) wire:change="with">
                                 <option value="">Pilih Kegiatan</option>
                                 @foreach($kegiatan as $k)
                                 <option value="{{ $k->id }}">[{{ $k->kode }}] {{ $k->nama }}</option>
@@ -377,7 +388,7 @@ new class extends Component {
                     <div class="col-md-3">
                         <div class="form-group mb-3">
                             <label>Sub Kegiatan</label>
-                            <select wire:model.live="sub_kegiatan_id" class="form-select" @disabled(!$kegiatan_id)>
+                            <select wire:model.live="sub_kegiatan_id" class="form-select" @disabled(!$kegiatan_id) wire:change="with">
                                 <option value="">Pilih Sub Kegiatan</option>
                                 @foreach($subKegiatan as $sk)
                                 <option value="{{ $sk->id }}">[{{ $sk->kode }}] {{ $sk->nama }}</option>
@@ -391,7 +402,7 @@ new class extends Component {
                     <div class="col-md-3">
                         <div class="form-group mb-3">
                             <label>Akun</label>
-                            <select wire:model.live="akun_id" class="form-select" @disabled(!$sub_kegiatan_id)>
+                            <select wire:model.live="akun_id" class="form-select" @disabled(!$sub_kegiatan_id) wire:change="with">
                                 <option value="">Pilih Akun</option>
                                 @foreach($akun as $a)
                                 <option value="{{ $a->id }}">[{{ $a->kode }}] {{ $a->nama }}</option>
@@ -405,7 +416,7 @@ new class extends Component {
                     <div class="col-md-3">
                         <div class="form-group mb-3">
                             <label>Kelompok Akun</label>
-                            <select wire:model.live="kelompok_akun_id" class="form-select" @disabled(!$akun_id)>
+                            <select wire:model.live="kelompok_akun_id" class="form-select" @disabled(!$akun_id) wire:change="with">
                                 <option value="">Pilih Kelompok Akun</option>
                                 @foreach($kelompokAkun as $ka)
                                 <option value="{{ $ka->id }}">[{{ $ka->kode }}] {{ $ka->nama }}</option>
@@ -419,7 +430,7 @@ new class extends Component {
                     <div class="col-md-3">
                         <div class="form-group mb-3">
                             <label>Jenis Akun</label>
-                            <select wire:model.live="jenis_akun_id" class="form-select" @disabled(!$kelompok_akun_id)>
+                            <select wire:model.live="jenis_akun_id" class="form-select" @disabled(!$kelompok_akun_id) wire:change="with">
                                 <option value="">Pilih Jenis Akun</option>
                                 @foreach($jenisAkun as $ja)
                                 <option value="{{ $ja->id }}">[{{ $ja->kode }}] {{ $ja->nama }}</option>
@@ -433,7 +444,7 @@ new class extends Component {
                     <div class="col-md-3">
                         <div class="form-group mb-3">
                             <label>Obyek Akun</label>
-                            <select wire:model.live="obyek_akun_id" class="form-select" @disabled(!$jenis_akun_id)>
+                            <select wire:model.live="obyek_akun_id" class="form-select" @disabled(!$jenis_akun_id) wire:change="with">
                                 <option value="">Pilih Obyek Akun</option>
                                 @foreach($obyekAkun as $oa)
                                 <option value="{{ $oa->id }}">[{{ $oa->kode }}] {{ $oa->nama }}</option>
@@ -447,7 +458,7 @@ new class extends Component {
                     <div class="col-md-3">
                         <div class="form-group mb-3">
                             <label>Rincian Obyek Akun</label>
-                            <select wire:model.live="rincian_obyek_akun_id" class="form-select" @disabled(!$obyek_akun_id)>
+                            <select wire:model.live="rincian_obyek_akun_id" class="form-select" @disabled(!$obyek_akun_id) wire:change="with">
                                 <option value="">Pilih Rincian Obyek Akun</option>
                                 @foreach($rincianObyekAkun as $roa)
                                 <option value="{{ $roa->id }}">[{{ $roa->kode }}] {{ $roa->nama }}</option>
@@ -461,7 +472,7 @@ new class extends Component {
                     <div class="col-md-3">
                         <div class="form-group mb-3">
                             <label>Sub Rincian Obyek Akun</label>
-                            <select wire:model.live="sub_rincian_obyek_akun_id" class="form-select" @disabled(!$rincian_obyek_akun_id)>
+                            <select wire:model.live="sub_rincian_obyek_akun_id" class="form-select" @disabled(!$rincian_obyek_akun_id) wire:change="with">
                                 <option value="">Pilih Sub Rincian Obyek Akun</option>
                                 @foreach($subRincianObyekAkun as $sroa)
                                 <option value="{{ $sroa->id }}">[{{ $sroa->kode }}] {{ $sroa->nama }}</option>
@@ -475,7 +486,7 @@ new class extends Component {
                     <div class="col-md-3">
                         <div class="form-group mb-3">
                             <label>Tahun</label>
-                            <select wire:model.live="tahun" class="form-select">
+                            <select wire:model.live="tahun" class="form-select" wire:change="with">
                                 <option value="">Pilih Tahun</option>
                                 @for($year = 2021; $year <= 2025; $year++) <option value="{{ $year }}">{{ $year }}</option>
                                     @endfor
@@ -512,12 +523,12 @@ new class extends Component {
             <div id="collapseOne" class="collapse show" aria-labelledby="headingOne" data-parent="#accordion">
                 <div class="card-body">
                     <div class="row">
-                        <div class="col-md-12 mb-4">
+                        <div class="col-md-6 mb-4">
                             <div class="card card-round">
                                 <div class="card-body">
                                     <div class="card-title fw-mediumbold">Anggaran vs Realisasi per Tahun</div>
                                     <div class="card-list"style="height: 500px;">
-                                        <livewire:livewire-column-chart :column-chart-model="$columnChartModel" />
+                                        <livewire:livewire-column-chart :column-chart-model="$columnChartModel" wire:poll.5000ms />
                                     </div>
                                 </div>
                             </div>
@@ -528,28 +539,28 @@ new class extends Component {
                                 <div class="card-body">
                                     <div class="card-title fw-mediumbold">Trend Realisasi Bulanan</div>
                                     <div class="card-list" style="height: 500px;">
-                                        <livewire:livewire-line-chart :line-chart-model="$lineChartModel" />
+                                        <livewire:livewire-line-chart :line-chart-model="$lineChartModel" wire:poll.5000ms />
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="col-md-12">
+                        <div class="col-md-6">
                             <div class="card card-round">
                                 <div class="card-body">
                                     <div class="card-title fw-mediumbold">Alokasi Anggaran per SKPD</div>
                                     <div class="card-list" style="height: 500px;">
-                                        <livewire:livewire-pie-chart :pie-chart-model="$pieChartModel" />
+                                        <livewire:livewire-pie-chart :pie-chart-model="$pieChartModel" wire:poll.5000ms />
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-12">
+                        <div class="col-md-6">
                             <div class="card card-round">
                                 <div class="card-body">
                                     <div class="card-title fw-mediumbold">Alokasi Anggaran per Tahun</div>
                                     <div class="card-list" style="height: 500px;">
-                                        <livewire:livewire-pie-chart :pie-chart-model="$pieChartModel1" style="height: 500px;" />
+                                        <livewire:livewire-pie-chart :pie-chart-model="$pieChartModel1" wire:poll.5000ms />
                                     </div>
                                 </div>
                             </div>
@@ -624,5 +635,17 @@ new class extends Component {
             </div>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('livewire:load', function () {
+            Livewire.on('columnChartRendered', function (chart) {
+                chart.options.tooltips.callbacks.label = function (tooltipItem, data) {
+                    let value = data.datasets[tooltipItem.datasetIndex].data[tooltipItem.index];
+                    return 'Rp ' + value.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                };
+                chart.update();
+            });
+        });
+    </script>
 
 </div>
