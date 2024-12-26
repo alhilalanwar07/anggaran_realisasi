@@ -6,6 +6,8 @@ use App\Models\SubSkpd;
 use App\Models\Program;
 use App\Models\Kegiatan;
 use App\Models\SubKegiatan;
+use App\Models\Anggaran;
+use App\Models\Realisasi;
 
 new class extends Component {
     public function with(): array
@@ -16,6 +18,9 @@ new class extends Component {
             'program' => Program::count(),
             'kegiatan' => Kegiatan::count(),
             'sub_kegiatan' => SubKegiatan::count(),
+            'pendapatan' => Anggaran::sum('nilai_anggaran'),
+            'realisasi' => Realisasi::sum('nilai_realisasi'),
+            
         ];
     }
 }; ?>
@@ -51,10 +56,6 @@ new class extends Component {
             <h3 class="fw-bold mb-3">Dashboard</h3>
             <h6 class="op-7 mb-2"></h6>
         </div>
-        {{-- <div class="ms-md-auto py-2 py-md-0">
-            <a href="#" class="btn btn-label-info btn-round me-2">Manage</a>
-            <a href="#" class="btn btn-primary btn-round">Add Customer</a>
-        </div> --}}
 
     </div>
     <div class="row">
@@ -64,13 +65,15 @@ new class extends Component {
                     <div class="row align-items-center">
                         <div class="col-icon">
                             <div class="icon-big text-center icon-primary bubble-shadow-small">
-                                <i class="fas fa-users"></i>
+                            <i class="fas fa-dollar-sign"></i>
                             </div>
                         </div>
                         <div class="col col-stats ms-3 ms-sm-0">
                             <div class="numbers">
-                                <p class="card-category">Total Anggaran Standar Pelayanan Minimal (SPM)</p>
-                                <h4 class="card-title">1,294</h4>
+                                <p class="card-category">Total Pendapatan</p>
+                                <h4 class="card-title">
+                                    Rp {{ number_format($pendapatan, 0, ',', '.') }}
+                                </h4>
                             </div>
                         </div>
                     </div>
@@ -88,8 +91,10 @@ new class extends Component {
                         </div>
                         <div class="col col-stats ms-3 ms-sm-0">
                             <div class="numbers">
-                                <p class="card-category">Total Anggaran Kemiskinan Ekstrem</p>
-                                <h4 class="card-title">1303</h4>
+                                <p class="card-category">Total Belanja</p>
+                                <h4 class="card-title">
+                                    Rp {{ number_format($realisasi, 0, ',', '.') }}
+                                </h4>
                             </div>
                         </div>
                     </div>
@@ -107,7 +112,7 @@ new class extends Component {
                         </div>
                         <div class="col col-stats ms-3 ms-sm-0">
                             <div class="numbers">
-                                <p class="card-category">Total Pendapatan</p>
+                                <p class="card-category">Total Pembiayaan</p>
                                 <h4 class="card-title">$ 1,345</h4>
                             </div>
                         </div>

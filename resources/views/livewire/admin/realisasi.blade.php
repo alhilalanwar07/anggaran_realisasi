@@ -20,6 +20,7 @@ use App\Models\SubRincianObyekAkun;
 use Livewire\WithFileUploads;
 use App\Imports\ImportDataRealisasi;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\ExportDataRealisasi;
 
 
 new class extends Component {
@@ -32,6 +33,9 @@ new class extends Component {
     public $file; // Properti untuk file
 
     public $nilai_anggaran, $nilai_realisasi, $tahun, $anggaran_id;
+
+    public $nilai_realisasi_edit, $tahun_edit, $anggaran_id_edit;
+    public $skpd_edit, $kegiatan_edit, $akun_edit;
 
     public function updatingSearch()
     {
@@ -132,6 +136,90 @@ new class extends Component {
         $this->reset(['file']);
     }
 
+    public function exportExcel()
+    {
+        // validasi jika tahun kosong
+        $this->validate([
+            'tahun' => 'required'
+        ], [
+            'tahun.required' => 'Pilih tahun sebelum export'
+        ]);
+
+        try {
+            return Excel::download(new ExportDataRealisasi($this->tahun), 'realisasi-' . $this->tahun . '.xlsx');
+        } catch (\Exception $e) {
+            $this->dispatch('errorAlertToast', $e->getMessage());
+        }
+        
+    }
+
+    public function confirmDelete($id)
+    {
+        $this->dispatch('confirmDelete', $id);
+    }
+
+    public function delete($id)
+    {
+        try {
+            Realisasi::find($id)->delete();
+            $this->dispatch('deleteAlertToast');
+        } catch (\Exception $e) {
+            $this->dispatch('errorAlertToast', $e->getMessage());
+        }
+    }
+
+    public function edit($id)
+    {
+        try {
+            $realisasi = Realisasi::findOrFail($id);
+            $this->anggaran_id_edit = $realisasi->anggaran_id;
+            $this->nilai_realisasi_edit = $realisasi->rawNilaiRealisasi;
+            $this->tahun_edit = $realisasi->tahun;
+
+            if($realisasi->anggaran) {
+                $this->skpd_edit = $realisasi->anggaran->subKegiatan?->kegiatan?->program?->subSkpd?->skpd?->nama ?? 'Data tidak ditemukan';
+                $this->kegiatan_edit = $realisasi->anggaran->subKegiatan?->kegiatan?->program?->nama ?? 'Data tidak ditemukan';
+                $this->akun_edit = $realisasi->anggaran->subRincianObyekAkun?->nama ?? 'Data tidak ditemukan';
+            } else {
+                $kodes = explode('.', $realisasi->kode ?? '');
+                
+                if (count($kodes) >= 5) {
+                    $skpd = $kodes[2] ?? '';
+                    $kegiatan = $kodes[4] ?? ''; 
+                    $akun = end($kodes);
+
+                    $this->skpd_edit = Skpd::where('kode', $skpd)->first()?->nama ?? 'Data tidak ditemukan';
+                    $this->kegiatan_edit = Program::where('kode', $kegiatan)->first()?->nama ?? 'Data tidak ditemukan';
+                    $this->akun_edit = SubRincianObyekAkun::where('kode', $akun)->first()?->nama ?? 'Data tidak ditemukan';
+                } else {
+                    throw new \Exception('Format kode tidak valid');
+                }
+            }
+        } catch (\Exception $e) {
+            $this->dispatch('errorAlertToast', 'Error saat mengambil data: ' . $e->getMessage());
+        }
+    }
+
+    public function update()
+    {
+        $this->validate([
+            'nilai_realisasi_edit' => 'required|numeric'
+        ], [
+            'nilai_realisasi_edit.required' => 'Nilai realisasi tidak boleh kosong',
+            'nilai_realisasi_edit.numeric' => 'Nilai realisasi harus berupa angka'
+        ]);
+
+        try {
+            $realisasi = Realisasi::find($this->anggaran_id);
+            $realisasi->update([
+                'nilai_realisasi' => $this->nilai_realisasi_edit
+            ]);
+            $this->dispatch('updateAlertToast');
+        } catch (\Exception $e) {
+            $this->dispatch('errorAlertToast', $e->getMessage());
+        }
+    }
+
 }; ?>
 
 <div>
@@ -146,8 +234,11 @@ new class extends Component {
                         <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalImport">
                             <i class="fa fa-file-excel"></i> &nbsp;Import Excel
                         </button>
-                        <button class="btn btn-info btn-sm" wire:click="exportExcel">
+                        <button class="btn btn-info btn-sm" wire:click.prevent="exportExcel">
                             <i class="fa fa-download"></i> &nbsp;Export Excel
+                            <div wire:loading wire:target="exportExcel" class="spinner-border text-light spinner-border-sm" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
                         </button>
                     </div>
                 </div>
@@ -166,12 +257,13 @@ new class extends Component {
                             <input wire:model.live="search" type="text" class="form-control w-auto" placeholder="Cari...">
                         </div>
                         <div class="">
-                            <select wire:model.live="tahun" class="form-control w-auto">
+                            <select wire:model.live="tahun" class="form-control w-auto @error('tahun') is-invalid @enderror">
                                 <option value="">Semua Tahun</option>
                                 @for($i = date('Y'); $i >= 2020; $i--)
                                 <option value="{{ $i }}">{{ $i }}</option>
                                 @endfor
                             </select>
+                            @error('tahun') <span class="error text-danger">{{ $message }}</span> @enderror
                         </div>
                     </div>
                 </div>
@@ -253,13 +345,61 @@ new class extends Component {
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" wire:click="close">Tutup</button>
-                        <button type="submit" class="btn btn-primary">Import</button>
+                        <button type="submit" class="btn btn-primary">Import 
+                            <div wire:loading wire:target="importExcel" class="spinner-border text-light spinner-border-sm" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
-
+    {{-- modal udpate nilai realisasi --}}
+    <div class="modal fade" id="modalEdit" tabindex="-1" wire:ignore.self data-bs-backdrop="static">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Update Nilai Realisasi</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" wire:click="close"></button>
+                </div>
+                <form wire:submit.prevent="update">
+                    <div class="modal-body row">
+                        {{-- skpd, kegiatan, akun, tahun= disable. nilai_realisasi = bisa di ubah --}}
+                        <div class="form-group mb-3 col-md-6">
+                            <label for="skpd_edit">SKPD</label>
+                            <textarea class="form-control" id="skpd_edit" wire:model="skpd_edit" disabled rows="3"></textarea>
+                        </div>
+                        <div class="form-group mb-3 col-md-6">
+                            <label for="kegiatan_edit">Kegiatan</label>
+                            <textarea class="form-control" id="kegiatan_edit" wire:model="kegiatan_edit" disabled rows="3"></textarea>
+                        </div>
+                        <div class="form-group mb-3 col-md-6">
+                            <label for="akun_edit">Akun</label>
+                            <textarea class="form-control" id="akun_edit" wire:model="akun_edit" disabled rows="3"></textarea>
+                        </div>
+                        <div class="form-group mb-3 col-md-6">
+                            <label for="tahun_edit">Tahun</label>
+                            <textarea class="form-control" id="tahun_edit" wire:model="tahun_edit" disabled rows="3"></textarea>
+                        </div>
+                        <div class="form-group mb-3 col-md-12">
+                            <label for="nilai_realisasi_edit">Nilai Realisasi</label>
+                            <input type="text" class="form-control @error('nilai_realisasi_edit') is-invalid @enderror" id="nilai_realisasi_edit" wire:model="nilai_realisasi_edit">
+                            @error('nilai_realisasi_edit') <span class="error text-danger">{{ $message }}</span> @enderror
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" wire:click="close">Tutup</button>
+                        <button type="submit" class="btn btn-primary">Simpan
+                            <div wire:loading wire:target="update" class="spinner-border text-light spinner-border-sm" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
     @push('script')
     <script>
         document.addEventListener('livewire:navigated', function() {
