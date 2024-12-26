@@ -150,7 +150,6 @@ new class extends Component {
         }
     }
 
-
     public function edit($id)
     {
         $anggaran = Anggaran::find($id);
