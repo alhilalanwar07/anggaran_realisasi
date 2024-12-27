@@ -258,7 +258,7 @@ new class extends Component {
 
     </div>
     <div class="row">
-        <div class="col-sm-6 col-md-4">
+        <div class="col-sm-6 col-md-6">
             <div class="card card-stats card-round">
                 <div class="card-body">
                     <div class="row align-items-center">
@@ -279,7 +279,7 @@ new class extends Component {
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-md-4">
+        <div class="col-sm-6 col-md-6">
             <div class="card card-stats card-round">
                 <div class="card-body">
                     <div class="row align-items-center">
@@ -300,7 +300,7 @@ new class extends Component {
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-md-4">
+        {{-- <div class="col-sm-6 col-md-4">
             <div class="card card-stats card-round">
                 <div class="card-body">
                     <div class="row align-items-center">
@@ -337,7 +337,7 @@ new class extends Component {
                     </div>
                 </div>
             </div>
-        </div>
+        </div> --}}
     </div>
     <div class="row g-2 mb-4">
         <!-- Bagian Kiri -->
@@ -548,7 +548,7 @@ new class extends Component {
                         </span>
                     </div>
                     <ul wire:ignore class="dashboard-stats mt-2" style="max-height: 300px; overflow-y: auto;">
-                    <canvas id="barChart"></canvas>
+                        <canvas id="barChart"></canvas>
                     </ul>
                     <div class="d-flex justify-content-around mb-24 mt-3" style="max-height: 300px; overflow-y: auto;">
                     </div>
@@ -700,7 +700,7 @@ new class extends Component {
             data: {
                 labels: @json($semuaData['labels']), // Label untuk sumbu X
                 datasets: [{
-                    label: 'Total Anggaran',
+                    label: '',
                     data: @json($semuaData['values']), // Data batang
                     backgroundColor: @json($semuaData['labels']).map(() => randomColor()), // Warna acak
                     borderWidth: 1
@@ -723,7 +723,7 @@ new class extends Component {
                         }
                     },
                     y: {
-                        beginAtZero: true // Mulai dari nol di sumbu Y
+                        beginAtZero: false // Mulai dari nol di sumbu Y
                     }
                 }
             }
