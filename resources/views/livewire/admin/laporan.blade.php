@@ -18,16 +18,29 @@ use App\Models\Anggaran;
 use App\Models\Realisasi;
 use function Livewire\Volt\{computed, state};
 use Livewire\WithPagination;
-use Asantibanez\LivewireCharts\Models\ColumnChartModel;
-use Asantibanez\LivewireCharts\Models\PieChartModel;
-use Asantibanez\LivewireCharts\Models\LineChartModel;
-
+use App\Exports\RealisasiExport;
 
 
 new class extends Component {
     use WithPagination;
 
     protected $paginationTheme = 'bootstrap';
+
+    public $urusan = [];
+    public $urusanPelaksana = [];
+    public $skpd = [];
+    public $subSkpd = [];
+    public $program = [];
+    public $kegiatan = [];
+    public $subKegiatan = [];
+    public $akun = [];
+    public $kelompokAkun = [];
+    public $jenisAkun = [];
+    public $obyekAkun = [];
+    public $rincianObyekAkun = [];
+    public $subRincianObyekAkun = [];
+    public $tahun = [];
+    public $realisasi = [];
 
     public $urusan_id;
     public $urusan_pelaksana_id;
@@ -42,217 +55,40 @@ new class extends Component {
     public $obyek_akun_id;
     public $rincian_obyek_akun_id;
     public $sub_rincian_obyek_akun_id;
-    public $tahun;
-    public $realisasi;
-    public $anggaran_id;
+    public $tahun_id;
+
+    public $realisasiAda = false;
+
+    public $colors = [], $labels = [], $data = []; // untuk chart
 
     public function with(): array
     {
-        $query = Realisasi::query()
-                ->with(['anggaran.subKegiatan.kegiatan.program.subSkpd.skpd.urusanPelaksana.urusan',
-                    'anggaran.subKegiatan.kegiatan.program.subSkpd.skpd.urusanPelaksana',
-                    'anggaran.subKegiatan.kegiatan.program.subSkpd.skpd',
-                    'anggaran.subKegiatan.kegiatan.program.subSkpd',
-                    'anggaran.subKegiatan.kegiatan.program',
-                    'anggaran.subKegiatan.kegiatan',
-                    'anggaran.subKegiatan',
-                    'anggaran.subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun.akun',
-                    'anggaran.subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun',
-                    'anggaran.subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun',
-                    'anggaran.subRincianObyekAkun.rincianObyekAkun.obyekAkun',
-                    'anggaran.subRincianObyekAkun.rincianObyekAkun',
-                    'anggaran.subRincianObyekAkun',
-                    'anggaran'
-                ]);
-
-
-        if ($this->urusan_id) {
-            $query->whereHas('anggaran.subKegiatan.kegiatan.program.subSkpd.skpd.urusanPelaksana.urusan',
-                fn($q) => $q->where('id', $this->urusan_id));
-        }
-
-        if ($this->urusan_pelaksana_id) {
-            $query->whereHas('anggaran.subKegiatan.kegiatan.program.subSkpd.skpd.urusanPelaksana',
-                fn($q) => $q->where('id', $this->urusan_pelaksana_id));
-        }
-
-        if ($this->skpd_id) {
-            $query->whereHas('anggaran.subKegiatan.kegiatan.program.subSkpd.skpd',
-                fn($q) => $q->where('id', $this->skpd_id));
-        }
-
-        if ($this->sub_skpd_id) {
-            $query->whereHas('anggaran.subKegiatan.kegiatan.program.subSkpd',
-                fn($q) => $q->where('id', $this->sub_skpd_id));
-        }
-
-        if ($this->program_id) {
-            $query->whereHas('anggaran.subKegiatan.kegiatan.program',
-                fn($q) => $q->where('id', $this->program_id));
-        }
-
-        if ($this->kegiatan_id) {
-            $query->whereHas('anggaran.subKegiatan.kegiatan',
-                fn($q) => $q->where('id', $this->kegiatan_id));
-        }
-
-        if ($this->sub_kegiatan_id) {
-            $query->whereHas('anggaran.subKegiatan',
-                fn($q) => $q->where('id', $this->sub_kegiatan_id));
-        }
-
-        if ($this->akun_id) {
-            $query->whereHas('anggaran.subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun.akun',
-                fn($q) => $q->where('id', $this->akun_id));
-        }
-
-        if ($this->kelompok_akun_id) {
-            $query->whereHas('anggaran.subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun',
-                fn($q) => $q->where('id', $this->kelompok_akun_id));
-        }
-
-        if ($this->jenis_akun_id) {
-            $query->whereHas('anggaran.subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun',
-                fn($q) => $q->where('id', $this->jenis_akun_id));
-        }
-
-        if ($this->obyek_akun_id) {
-            $query->whereHas('anggaran.subRincianObyekAkun.rincianObyekAkun.obyekAkun',
-                fn($q) => $q->where('id', $this->obyek_akun_id));
-        }
-
-        if ($this->rincian_obyek_akun_id) {
-            $query->whereHas('anggaran.subRincianObyekAkun.rincianObyekAkun',
-                fn($q) => $q->where('id', $this->rincian_obyek_akun_id));
-        }
-
-        if ($this->sub_rincian_obyek_akun_id) {
-            $query->whereHas('anggaran.subRincianObyekAkun',
-                fn($q) => $q->where('id', $this->sub_rincian_obyek_akun_id));
-        }
-
-        if ($this->tahun) {
-            $query->whereHas('anggaran',
-                fn($q) => $q->where('tahun', $this->tahun));
-        }
-
-        $this->anggaran_id = $query->pluck('anggaran_id')->toArray();
-
-        $this->realisasi = $query->when($this->anggaran_id, function ($q) {
-            return $q->whereIn('anggaran_id', $this->anggaran_id);
-        })->get();
-
-        // Column Chart - Yearly Budget vs Realization
-        $columnChartModel = (new ColumnChartModel())
-            ->setTitle('Anggaran vs Realisasi per Tahun')
-            ->setAnimated(true)
-            ->withoutLegend();
-
-        $years = $this->realisasi->pluck('tahun')->unique();
-
-        foreach($years as $year) {
-            $anggaranSum = $this->realisasi->where('tahun', $year)->sum('anggaran.rawNilaiAnggaran');
-            $realisasiSum = $this->realisasi->where('tahun', $year)->sum('rawNilaiRealisasi');
-
-            $columnChartModel->addColumn(
-                $year . ' Anggaran',
-                $anggaranSum,
-                '#2E93fA'
-            );
-            $columnChartModel->addColumn(
-                $year . ' Realisasi',
-                $realisasiSum,
-                '#66DA26'
-            );
-        }
-        // Line Chart - Monthly Trends
-        $lineChartModel = (new LineChartModel())
-            ->setTitle('Trend Realisasi Bulanan')
-            ->setAnimated(true);
-
-        // Add monthly data points
-        for ($i = 1; $i <= 12; $i++) {
-            $lineChartModel->addPoint(
-            date("F", mktime(0, 0, 0, $i, 1)),
-            $this->realisasi->where('bulan', $i)->sum('rawNilaiRealisasi')
-            );
-        }
-
-        // Pie Chart - Budget by SKPD
-        $pieChartModel = (new PieChartModel())
-            ->setTitle('Alokasi Anggaran per SKPD')
-            ->setAnimated(true);
-
-        $skpdData = $this->realisasi->groupBy('skpd_id')
-            ->map(function($items) {
-            return [
-                'nama' => $items->first()->anggaran->subKegiatan->kegiatan->program->subSkpd->skpd->nama,
-                'total' => $items->sum('anggaran.rawNilaiAnggaran')
-            ];
-            });
-
-        foreach($skpdData as $data) {
-            $pieChartModel->addSlice(
-                $data['nama'],
-                $data['total'],
-                '#' . substr(md5($data['nama']), 0, 6)
-            );
-        }
-
-        // pie chart - Anggaran per tahun (akan muncul jika tahun tidak dipilih)
-        $pieChartModel1 = (new PieChartModel())
-            ->setTitle('Alokasi Anggaran per Tahun')
-            ->setAnimated(true);
-
-        $totalAnggaran = $this->realisasi->sum('anggaran.rawNilaiAnggaran');
-
-        $totalRealisasi = $this->realisasi->sum('rawNilaiRealisasi');
-
-        //dd($totalAnggaran, $totalRealisasi);
-
-        $tahunData = $this->realisasi->groupBy('tahun')
-            ->map(function($items) use ($totalAnggaran) {
-            $total = $items->sum('anggaran.rawNilaiAnggaran');
-            $percentage = ($total / $totalAnggaran) * 100;
-            return [
-            'tahun' => $items->first()->tahun,
-            'total' => $total,
-            'percentage' => $percentage
-            ];
-            });
-
-        foreach($tahunData as $data) {
-            $pieChartModel1->addSlice(
-            $data['tahun'] . ' (' . number_format($data['percentage'], 2) . '%)',
-            $data['total'],
-            '#' . substr(md5($data['tahun']), 0, 6)
-            );
-        }
-
 
         return [
-            'realisasi' => $this->realisasi,
-            'anggaran' => $query->paginate(10),
-            'urusan' => Urusan::orderBy('kode')->get(),
-            'urusanPelaksana' => $this->urusan_id ? UrusanPelaksana::where('urusan_id', $this->urusan_id)->orderBy('kode')->get() : [],
-            'skpd' => $this->urusan_pelaksana_id ? Skpd::where('urusan_pelaksana_id', $this->urusan_pelaksana_id)->orderBy('kode')->get() : [],
-            'subSkpd' => $this->skpd_id ? SubSkpd::where('skpd_id', $this->skpd_id)->orderBy('kode')->get() : [],
-            'program' => $this->sub_skpd_id ? Program::where('sub_skpd_id', $this->sub_skpd_id)->orderBy('kode')->get() : [],
-            'kegiatan' => $this->program_id ? Kegiatan::where('program_id', $this->program_id)->orderBy('kode')->get() : [],
-            'subKegiatan' => $this->kegiatan_id ? SubKegiatan::where('kegiatan_id', $this->kegiatan_id)->orderBy('kode')->get() : [],
-            'akun' => $this->sub_kegiatan_id ? Akun::orderBy('kode')->get() : [],
-            'kelompokAkun' => $this->akun_id ? KelompokAkun::where('akun_id', $this->akun_id)->orderBy('kode')->get() : [],
-            'jenisAkun' => $this->kelompok_akun_id ? JenisAkun::where('kelompok_akun_id', $this->kelompok_akun_id)->orderBy('kode')->get() : [],
-            'obyekAkun' => $this->jenis_akun_id ? ObyekAkun::where('jenis_akun_id', $this->jenis_akun_id)->orderBy('kode')->get() : [],
-            'rincianObyekAkun' => $this->obyek_akun_id ? RincianObyekAkun::where('obyek_akun_id', $this->obyek_akun_id)->orderBy('kode')->get() : [],
-            'subRincianObyekAkun' => $this->rincian_obyek_akun_id ? SubRincianObyekAkun::where('rincian_obyek_akun_id', $this->rincian_obyek_akun_id)->orderBy('kode')->get() : [],
-            'tahun' => $this->tahun ? $this->tahun : [],
-            'columnChartModel' => $columnChartModel,
-            'lineChartModel' => $lineChartModel,
-            'pieChartModel' => $pieChartModel,
-            'pieChartModel1' => $pieChartModel1
-
+            'urusanPelaksana' => $this->getDataUrusanPelaksana($this->urusan_id),
+            'skpd' => $this->getDataSkpd($this->urusan_pelaksana_id),
+            'subSkpd' => $this->getDataSubSkpd($this->skpd_id),
+            'program' => $this->getDataProgram($this->sub_skpd_id),
+            'kegiatan' => $this->getDataKegiatan($this->program_id),
+            'subKegiatan' => $this->getDataSubKegiatan($this->kegiatan_id),
+            'kelompokAkun' => $this->getDataKelompokAkun($this->akun_id),
+            'jenisAkun' => $this->getDataJenisAkun($this->kelompok_akun_id),
+            'obyekAkun' => $this->getDataObyekAkun($this->jenis_akun_id),
+            'rincianObyekAkun' => $this->getDataRincianObyekAkun($this->obyek_akun_id),
+            'subRincianObyekAkun' => $this->getDataSubRincianObyekAkun($this->rincian_obyek_akun_id),
+            'tahun' => $this->getDataTahun(),
+            // 'realisasi' => $this->getDataRealisasi(),
+            
         ];
+    }
+
+    public function randomColors($count)
+    {
+        $colors = [];
+        for ($i = 0; $i < $count; $i++) {
+            $colors[] = '#' . substr(str_shuffle('ABCDEF0123456789'), 0, 6);
+        }
+        return $colors;
     }
 
     public function formatRupiah($angka)
@@ -266,25 +102,146 @@ new class extends Component {
         return (new RealisasiExport($this->realisasi))->download('realisasi.xlsx');
     }
 
-    public function resetFilters()
-    {
-        $this->reset([
-            'urusan_id',
-            'urusan_pelaksana_id',
-            'skpd_id',
-            'sub_skpd_id',
-            'program_id',
-            'kegiatan_id',
-            'sub_kegiatan_id',
-            'akun_id',
-            'kelompok_akun_id',
-            'jenis_akun_id',
-            'obyek_akun_id',
-            'rincian_obyek_akun_id',
-            'sub_rincian_obyek_akun_id',
-            'tahun'
-        ]);
+    public function mount(){
+        $this->urusan = $this->getDataUrusan();
+        $this->akun = $this->getDataAkun();
     }
+
+    public function updatedUrusanId($value)
+    {
+        $this->urusanPelaksana = $this->getDataUrusanPelaksana($value);
+        $this->reset(['urusan_pelaksana_id', 'skpd_id', 'sub_skpd_id', 'program_id', 'kegiatan_id', 'sub_kegiatan_id']);
+    }
+
+    public function updatedUrusanPelaksanaId($value)
+    {
+        $this->skpd = $this->getDataSkpd($value);
+        $this->reset(['skpd_id', 'sub_skpd_id', 'program_id', 'kegiatan_id', 'sub_kegiatan_id']);
+    }
+
+    public function updatedSkpdId($value)
+    {
+        $this->subSkpd = $this->getDataSubSkpd($value);
+        $this->reset(['sub_skpd_id', 'program_id', 'kegiatan_id', 'sub_kegiatan_id']);
+    }
+
+    public function updatedSubSkpdId($value)
+    {
+        $this->program = $this->getDataProgram($value);
+        $this->reset(['program_id', 'kegiatan_id', 'sub_kegiatan_id']);
+    }
+
+    public function updatedProgramId($value)
+    {
+        $this->kegiatan = $this->getDataKegiatan($value);
+        $this->reset(['kegiatan_id', 'sub_kegiatan_id']);
+    }
+
+    public function updatedKegiatanId($value)
+    {
+        $this->subKegiatan = $this->getDataSubKegiatan($value);
+        $this->reset(['sub_kegiatan_id']);
+    }
+
+    public function updatedAkunId($value)
+    {
+        $this->kelompokAkun = $this->getDataKelompokAkun($value);
+        $this->reset(['kelompok_akun_id', 'jenis_akun_id', 'obyek_akun_id', 'rincian_obyek_akun_id', 'sub_rincian_obyek_akun_id']);
+    }
+
+    public function updatedKelompokAkunId($value)
+    {
+        $this->jenisAkun = $this->getDataJenisAkun($value);
+        $this->reset(['jenis_akun_id', 'obyek_akun_id', 'rincian_obyek_akun_id', 'sub_rincian_obyek_akun_id']);
+    }
+
+    public function updatedJenisAkunId($value)
+    {
+        $this->obyekAkun = $this->getDataObyekAkun($value);
+        $this->reset(['obyek_akun_id', 'rincian_obyek_akun_id', 'sub_rincian_obyek_akun_id']);
+    }
+
+    public function updatedObyekAkunId($value)
+    {
+        $this->rincianObyekAkun = $this->getDataRincianObyekAkun($value);
+        $this->reset(['rincian_obyek_akun_id', 'sub_rincian_obyek_akun_id']);
+    }
+
+    public function updatedRincianObyekAkunId($value)
+    {
+        $this->subRincianObyekAkun = $this->getDataSubRincianObyekAkun($value);
+        $this->reset(['sub_rincian_obyek_akun_id']);
+    }
+
+    public function updatedTahunId($value)
+    {
+        $this->tahun = $this->getDataTahun();
+    }
+
+    public function getDataUrusan(){
+        return Urusan::orderBy('kode')->get();
+    }
+
+    public function getDataUrusanPelaksana($urusan_id){
+        return UrusanPelaksana::where('urusan_id', $urusan_id)->orderBy('kode')->get();
+    }
+
+    public function getDataSkpd($urusan_pelaksana_id){
+        return Skpd::where('urusan_pelaksana_id', $urusan_pelaksana_id)->orderBy('kode')->get();
+    }
+
+    public function getDataSubSkpd($skpd_id){
+        return SubSkpd::where('skpd_id', $skpd_id)->orderBy('kode')->get();
+    }
+
+    public function getDataProgram($sub_skpd_id){
+        return Program::where('sub_skpd_id', $sub_skpd_id)->orderBy('kode')->get();
+    }
+
+    public function getDataKegiatan($program_id){
+        return Kegiatan::where('program_id', $program_id)->orderBy('kode')->get();
+    }
+
+    public function getDataSubKegiatan($kegiatan_id){
+        return SubKegiatan::where('kegiatan_id', $kegiatan_id)->orderBy('kode')->get();
+    }
+
+    public function getDataAkun(){
+        return Akun::orderBy('kode')->get();
+    }
+
+    public function getDataKelompokAkun($akun_id){
+        return KelompokAkun::where('akun_id', $akun_id)->orderBy('kode')->get();
+    }
+
+    public function getDataJenisAkun($kelompok_akun_id){
+        return JenisAkun::where('kelompok_akun_id', $kelompok_akun_id)->orderBy('kode')->get();
+    }
+
+    public function getDataObyekAkun($jenis_akun_id){
+        return ObyekAkun::where('jenis_akun_id', $jenis_akun_id)->orderBy('kode')->get();
+    }
+
+    public function getDataRincianObyekAkun($obyek_akun_id){
+        return RincianObyekAkun::where('obyek_akun_id', $obyek_akun_id)->orderBy('kode')->get();
+    }
+
+    public function getDataSubRincianObyekAkun($rincian_obyek_akun_id){
+        return SubRincianObyekAkun::where('rincian_obyek_akun_id', $rincian_obyek_akun_id)->orderBy('kode')->get();
+    }
+
+    public function getDataTahun(){
+        return Realisasi::select('tahun')->distinct()->orderBy('tahun')->get();
+    }
+
+    public function tampilkanRealisasi(){
+        $this->realisasiAda = true;
+
+        $this->realisasi = $this->getDataRealisasi();
+
+        dd($this->realisasi);
+    }
+
 }; ?>
 
 <div>
@@ -318,7 +275,7 @@ new class extends Component {
                     <div class="col-md-3">
                         <div class="form-group mb-3">
                             <label>Urusan Pelaksana</label>
-                            <select wire:model.live="urusan_pelaksana_id" class="form-select" @disabled(!$urusan_id) wire:change="with">
+                            <select wire:model.live="urusan_pelaksana_id" class="form-select" wire:change="with">
                                 <option value="">Pilih Urusan Pelaksana</option>
                                 @foreach($urusanPelaksana as $up)
                                 <option value="{{ $up->id }}">[{{ $up->kode }}] {{ $up->nama }}</option>
@@ -332,7 +289,7 @@ new class extends Component {
                     <div class="col-md-3">
                         <div class="form-group mb-3">
                             <label>SKPD</label>
-                            <select wire:model.live="skpd_id" class="form-select" @disabled(!$urusan_pelaksana_id) wire:change="with">
+                            <select wire:model.live="skpd_id" class="form-select" wire:change="with">
                                 <option value="">Pilih SKPD</option>
                                 @foreach($skpd as $s)
                                 <option value="{{ $s->id }}">[{{ $s->kode }}] {{ $s->nama }}</option>
@@ -346,7 +303,7 @@ new class extends Component {
                     <div class="col-md-3">
                         <div class="form-group mb-3">
                             <label>Sub SKPD</label>
-                            <select wire:model.live="sub_skpd_id" class="form-select" @disabled(!$skpd_id) wire:change="with">
+                            <select wire:model.live="sub_skpd_id" class="form-select" wire:change="with">
                                 <option value="">Pilih Sub SKPD</option>
                                 @foreach($subSkpd as $ss)
                                 <option value="{{ $ss->id }}">[{{ $ss->kode }}] {{ $ss->nama }}</option>
@@ -360,7 +317,7 @@ new class extends Component {
                     <div class="col-md-3">
                         <div class="form-group mb-3">
                             <label>Program</label>
-                            <select wire:model.live="program_id" class="form-select" @disabled(!$sub_skpd_id) wire:change="with">
+                            <select wire:model.live="program_id" class="form-select" wire:change="with">
                                 <option value="">Pilih Program</option>
                                 @foreach($program as $p)
                                 <option value="{{ $p->id }}">[{{ $p->kode }}] {{ $p->nama }}</option>
@@ -374,7 +331,7 @@ new class extends Component {
                     <div class="col-md-3">
                         <div class="form-group mb-3">
                             <label>Kegiatan</label>
-                            <select wire:model.live="kegiatan_id" class="form-select" @disabled(!$program_id) wire:change="with">
+                            <select wire:model.live="kegiatan_id" class="form-select" wire:change="with">
                                 <option value="">Pilih Kegiatan</option>
                                 @foreach($kegiatan as $k)
                                 <option value="{{ $k->id }}">[{{ $k->kode }}] {{ $k->nama }}</option>
@@ -388,7 +345,7 @@ new class extends Component {
                     <div class="col-md-3">
                         <div class="form-group mb-3">
                             <label>Sub Kegiatan</label>
-                            <select wire:model.live="sub_kegiatan_id" class="form-select" @disabled(!$kegiatan_id) wire:change="with">
+                            <select wire:model.live="sub_kegiatan_id" class="form-select" wire:change="with">
                                 <option value="">Pilih Sub Kegiatan</option>
                                 @foreach($subKegiatan as $sk)
                                 <option value="{{ $sk->id }}">[{{ $sk->kode }}] {{ $sk->nama }}</option>
@@ -402,7 +359,7 @@ new class extends Component {
                     <div class="col-md-3">
                         <div class="form-group mb-3">
                             <label>Akun</label>
-                            <select wire:model.live="akun_id" class="form-select" @disabled(!$sub_kegiatan_id) wire:change="with">
+                            <select wire:model.live="akun_id" class="form-select" wire:change="with">
                                 <option value="">Pilih Akun</option>
                                 @foreach($akun as $a)
                                 <option value="{{ $a->id }}">[{{ $a->kode }}] {{ $a->nama }}</option>
@@ -416,7 +373,7 @@ new class extends Component {
                     <div class="col-md-3">
                         <div class="form-group mb-3">
                             <label>Kelompok Akun</label>
-                            <select wire:model.live="kelompok_akun_id" class="form-select" @disabled(!$akun_id) wire:change="with">
+                            <select wire:model.live="kelompok_akun_id" class="form-select" wire:change="with">
                                 <option value="">Pilih Kelompok Akun</option>
                                 @foreach($kelompokAkun as $ka)
                                 <option value="{{ $ka->id }}">[{{ $ka->kode }}] {{ $ka->nama }}</option>
@@ -430,7 +387,7 @@ new class extends Component {
                     <div class="col-md-3">
                         <div class="form-group mb-3">
                             <label>Jenis Akun</label>
-                            <select wire:model.live="jenis_akun_id" class="form-select" @disabled(!$kelompok_akun_id) wire:change="with">
+                            <select wire:model.live="jenis_akun_id" class="form-select" wire:change="with">
                                 <option value="">Pilih Jenis Akun</option>
                                 @foreach($jenisAkun as $ja)
                                 <option value="{{ $ja->id }}">[{{ $ja->kode }}] {{ $ja->nama }}</option>
@@ -444,7 +401,7 @@ new class extends Component {
                     <div class="col-md-3">
                         <div class="form-group mb-3">
                             <label>Obyek Akun</label>
-                            <select wire:model.live="obyek_akun_id" class="form-select" @disabled(!$jenis_akun_id) wire:change="with">
+                            <select wire:model.live="obyek_akun_id" class="form-select" wire:change="with">
                                 <option value="">Pilih Obyek Akun</option>
                                 @foreach($obyekAkun as $oa)
                                 <option value="{{ $oa->id }}">[{{ $oa->kode }}] {{ $oa->nama }}</option>
@@ -458,7 +415,7 @@ new class extends Component {
                     <div class="col-md-3">
                         <div class="form-group mb-3">
                             <label>Rincian Obyek Akun</label>
-                            <select wire:model.live="rincian_obyek_akun_id" class="form-select" @disabled(!$obyek_akun_id) wire:change="with">
+                            <select wire:model.live="rincian_obyek_akun_id" class="form-select" wire:change="with">
                                 <option value="">Pilih Rincian Obyek Akun</option>
                                 @foreach($rincianObyekAkun as $roa)
                                 <option value="{{ $roa->id }}">[{{ $roa->kode }}] {{ $roa->nama }}</option>
@@ -472,7 +429,7 @@ new class extends Component {
                     <div class="col-md-3">
                         <div class="form-group mb-3">
                             <label>Sub Rincian Obyek Akun</label>
-                            <select wire:model.live="sub_rincian_obyek_akun_id" class="form-select" @disabled(!$rincian_obyek_akun_id) wire:change="with">
+                            <select wire:model.live="sub_rincian_obyek_akun_id" class="form-select" wire:change="with">
                                 <option value="">Pilih Sub Rincian Obyek Akun</option>
                                 @foreach($subRincianObyekAkun as $sroa)
                                 <option value="{{ $sroa->id }}">[{{ $sroa->kode }}] {{ $sroa->nama }}</option>
@@ -486,24 +443,40 @@ new class extends Component {
                     <div class="col-md-3">
                         <div class="form-group mb-3">
                             <label>Tahun</label>
-                            <select wire:model.live="tahun" class="form-select" wire:change="with">
+                            <select wire:model.live="tahun_id" class="form-select" wire:change="with">
                                 <option value="">Pilih Tahun</option>
                                 @for($year = 2021; $year <= 2025; $year++) <option value="{{ $year }}">{{ $year }}</option>
                                     @endfor
                             </select>
-                            <div wire:loading wire:target="tahun" class="text-success">Memuat...</div>
+                            <div wire:loading wire:target="tahun_id" class="text-success">Memuat...</div>
                         </div>
                     </div>
 
                     <div class="col-md-6 align-content-end">
-                        <div class="form-group mb-3 d-flex justify-content-end ">
+                        <div class="form-group mb-3 d-flex justify-content-end gap-2">
                             {{-- <label>Cetak</label> --}}
-                            <a href="#" class="btn btn-primary btn-sm btn-block p-3">
+                            <button wire:click="downloadExcel" class="btn btn-success btn-sm btn-block p-3">
                                 <span class="btn-label">
                                     <i class="fa fa-print"></i>
                                 </span>
-                                Cetak
-                            </a>
+                                Cetak Excel
+                                <div wire:loading wire:target="downloadExcel" class="text-success">Memuat...</div>
+                            </button>
+                            <!-- tombol Tampilkan Grafik, Tombol Tampilkan Tabel -->
+                            <button wire:click="tampilkanRealisasi" class="btn btn-primary btn-sm btn-block p-3">
+                                <span class="btn-label">
+                                    <i class="fa fa-table"></i>
+                                </span>
+                                Tampilkan Tabel
+                                <div wire:loading wire:target="tampilkanRealisasi" class="text-success">Memuat...</div>
+                            </button>
+                            <button wire:click="downloadExcel" class="btn btn-secondary btn-sm btn-block p-3">
+                                <span class="btn-label">
+                                    <i class="fa fa-chart-bar"></i>
+                                </span>
+                                Tampilkan Grafik
+                                <div wire:loading wire:target="downloadExcel" class="text-success">Memuat...</div>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -518,12 +491,13 @@ new class extends Component {
                     Grafik Laporan
                 </div>
                 <div class="span-mode"></div>
-            </div>
+            </div> 
 
-            <div id="collapseOne" class="collapse show" aria-labelledby="headingOne" data-parent="#accordion">
+
+            {{-- <div id="collapseOne" class="collapse" aria-labelledby="headingOne" data-parent="#accordion">
                 <div class="card-body">
                     <div class="row">
-                        <div class="col-md-6 mb-4">
+                        <div class="col-md-12 mb-4">
                             <div class="card card-round">
                                 <div class="card-body">
                                     <div class="card-title fw-mediumbold">Anggaran vs Realisasi per Tahun</div>
@@ -567,9 +541,9 @@ new class extends Component {
                         </div>
                     </div>
                 </div>
-            </div>
+            </div> --}}
         </div>
-        <div class="card">
+        {{-- <div class="card">
             <div class="card-header collapsed" id="headingTwo" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
                 <div class="span-title">
                     Tabel Laporan
@@ -620,32 +594,7 @@ new class extends Component {
                     </div>
                 </div>
             </div>
-        </div>
-        {{-- <div class="card">
-            <div class="card-header collapsed" id="headingThree" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
-                <div class="span-title">
-                    Lorem Ipsum #3
-                </div>
-                <div class="span-mode"></div>
-            </div>
-            <div id="collapseThree" class="collapse" aria-labelledby="headingThree" data-parent="#accordion">
-                <div class="card-body">
-                    Anim pariatur cliche reprehenderit, enim eiusmod high life accusamus terry richardson ad squid. 3 wolf moon officia aute, non cupidatat skateboard dolor brunch. Food truck quinoa nesciunt laborum eiusmod. Brunch 3 wolf moon tempor, sunt aliqua put a bird on it squid single-origin coffee nulla assumenda shoreditch et. Nihil anim keffiyeh helvetica, craft beer labore wes anderson cred nesciunt sapiente ea proident. Ad vegan excepteur butcher vice lomo. Leggings occaecat craft beer farm-to-table, raw denim aesthetic synth nesciunt you probably haven't heard of them accusamus labore sustainable VHS.
-                </div>
-            </div>
         </div> --}}
     </div>
-
-    <script>
-        document.addEventListener('livewire:load', function () {
-            Livewire.on('columnChartRendered', function (chart) {
-                chart.options.tooltips.callbacks.label = function (tooltipItem, data) {
-                    let value = data.datasets[tooltipItem.datasetIndex].data[tooltipItem.index];
-                    return 'Rp ' + value.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                };
-                chart.update();
-            });
-        });
-    </script>
 
 </div>

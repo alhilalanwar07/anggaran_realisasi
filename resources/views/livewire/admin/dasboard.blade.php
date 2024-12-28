@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\DB;
 new class extends Component {
     public $filter = 'urusan';
 
+
     public function with(): array
     {
         $grafikData = $this->grafikData();
@@ -21,7 +22,7 @@ new class extends Component {
         $belanjaData = $this->belanjaData();
         $semuaData = $this->semuaData($this->filter);
         return [
-            'skpd' => Skpd::count(),    
+            'skpd' => Skpd::count(), 
             'unit_skpd' => SubSkpd::count(),
             'program' => Program::count(),
             'kegiatan' => Kegiatan::count(),
@@ -619,123 +620,123 @@ new class extends Component {
     </div>
 
 </div>
-<script>
-    // randomColor
-    function randomColor() {
-        return '#' + Math.floor(Math.random() * 16777215).toString(16);
-    }
-    
-    const ctx = document.getElementById('kelompokChart').getContext('2d');
-    const values = @json($grafikData['values']);
-    const colors = values.map(() => randomColor());
-    const chart = new Chart(ctx, {
-        type: 'pie',
-        data: {
-            labels: @json($grafikData['labels']),
-            datasets: [{
-                data: values,
-                backgroundColor: colors
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-            legend: {
-                display: false
-            }
-            }
-        },
-    });
-    
-    // Chart for Pendapatan
-    const ctxPendapatanGroup = document.getElementById('chartPendapatanGroup').getContext('2d');
-    new Chart(ctxPendapatanGroup, {
-        type: 'pie',
-        data: {
-            labels: @json($pendapatanData['labels']),
-            datasets: [{
-                data: @json($pendapatanData['values']),
-                backgroundColor: @json($pendapatanData['labels']).map(() => randomColor()),
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-            legend: {
-                display: false
-            }
-            }
-        },
-    });
-
-    // Chart for Belanja
-    const ctxBelanjaGroup = document.getElementById('chartBelanjaGroup').getContext('2d');
-    new Chart(ctxBelanjaGroup, {
-        type: 'pie', 
-        data: {
-            labels: @json($belanjaData['labels']),
-            datasets: [{
-                data: @json($belanjaData['values']),
-                backgroundColor: @json($belanjaData['labels']).map(() => randomColor()),
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-            legend: {
-                display: false
-            }
-            }
-        },
-    });
-
-</script>
-<script>
-    document.addEventListener('livewire:init', function () {
-        const ctxBar = document.getElementById('barChart').getContext('2d');
-        const chart = new Chart(ctxBar, {
-            type: 'bar',
+    <script>
+        // randomColor
+        function randomColor() {
+            return '#' + Math.floor(Math.random() * 16777215).toString(16);
+        }
+        
+        const ctx = document.getElementById('kelompokChart').getContext('2d');
+        const values = @json($grafikData['values']);
+        const colors = values.map(() => randomColor());
+        const chart = new Chart(ctx, {
+            type: 'pie',
             data: {
-                labels: @json($semuaData['labels']), // Label untuk sumbu X
+                labels: @json($grafikData['labels']),
                 datasets: [{
-                    label: '',
-                    data: @json($semuaData['values']), // Data batang
-                    backgroundColor: @json($semuaData['labels']).map(() => randomColor()), // Warna acak
+                    data: values,
+                    backgroundColor: colors
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                legend: {
+                    display: false
+                }
+                }
+            },
+        });
+        
+        // Chart for Pendapatan
+        const ctxPendapatanGroup = document.getElementById('chartPendapatanGroup').getContext('2d');
+        new Chart(ctxPendapatanGroup, {
+            type: 'pie',
+            data: {
+                labels: @json($pendapatanData['labels']),
+                datasets: [{
+                    data: @json($pendapatanData['values']),
+                    backgroundColor: @json($pendapatanData['labels']).map(() => randomColor()),
                     borderWidth: 1
                 }]
             },
             options: {
                 responsive: true,
                 plugins: {
-                    legend: {
-                        display: false // Sembunyikan legenda
-                    }
-                },
-                scales: {
-                    x: {
-                        ticks: {
-                            display: false // Nonaktifkan label teks di sumbu X
-                        },
-                        grid: {
-                            display: false // Nonaktifkan garis grid di sumbu X (opsional)
-                        }
-                    },
-                    y: {
-                        beginAtZero: false // Mulai dari nol di sumbu Y
-                    }
+                legend: {
+                    display: false
                 }
-            }
+                }
+            },
         });
 
-        window.livewire.on('filterChanged', data => {
-            chart.data.labels = data.labels;
-            chart.data.datasets[0].data = data.values;
-            chart.data.datasets[0].backgroundColor = data.labels.map(() => randomColor());
-            chart.update();
+        // Chart for Belanja
+        const ctxBelanjaGroup = document.getElementById('chartBelanjaGroup').getContext('2d');
+        new Chart(ctxBelanjaGroup, {
+            type: 'pie', 
+            data: {
+                labels: @json($belanjaData['labels']),
+                datasets: [{
+                    data: @json($belanjaData['values']),
+                    backgroundColor: @json($belanjaData['labels']).map(() => randomColor()),
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                legend: {
+                    display: false
+                }
+                }
+            },
         });
-    });
-</script>
+
+    </script>
+    <script>
+        document.addEventListener('livewire:init', function () {
+            const ctxBar = document.getElementById('barChart').getContext('2d');
+            const chart = new Chart(ctxBar, {
+                type: 'bar',
+                data: {
+                    labels: @json($semuaData['labels']), // Label untuk sumbu X
+                    datasets: [{
+                        label: '',
+                        data: @json($semuaData['values']), // Data batang
+                        backgroundColor: @json($semuaData['labels']).map(() => randomColor()), // Warna acak
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false // Sembunyikan legenda
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                display: false // Nonaktifkan label teks di sumbu X
+                            },
+                            grid: {
+                                display: false // Nonaktifkan garis grid di sumbu X (opsional)
+                            }
+                        },
+                        y: {
+                            beginAtZero: false // Mulai dari nol di sumbu Y
+                        }
+                    }
+                }
+            });
+
+            window.livewire.on('filterChanged', data => {
+                chart.data.labels = data.labels;
+                chart.data.datasets[0].data = data.values;
+                chart.data.datasets[0].backgroundColor = data.labels.map(() => randomColor());
+                chart.update();
+            });
+        });
+    </script>
 
 </div>
