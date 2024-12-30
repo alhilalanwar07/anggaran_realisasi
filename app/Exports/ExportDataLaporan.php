@@ -10,38 +10,25 @@ use Maatwebsite\Excel\Concerns\WithMapping;
 
 class ExportDataLaporan implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize
 {
-    protected $tahun;
+    protected $realisasi;
 
-    public function __construct($tahun = null)
+    public function __construct($realisasi)
     {
-        $this->tahun = $tahun;
+        $this->realisasi = $realisasi;
+        // dd($realisasi);
     }
 
     public function collection()
     {
-        $query = Realisasi::query()
-            ->with([
-                'anggaran.subKegiatan.kegiatan.program.subSkpd.skpd.urusanPelaksana.urusan',
-                'anggaran.subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun.akun'
-            ]);
-
-        if ($this->tahun) {
-            $query->whereHas('anggaran', function($q) {
-                $q->where('tahun', $this->tahun);
-            });
-        }
-
-        return $query->get();
+        return $this->realisasi;
     }
 
-    
     public function map($realisasi): array
     {
         $kode_parts = $realisasi->anggaran === null ? explode('.', $realisasi->kode) : null;
         
         return [
             $realisasi->anggaran ? $realisasi->anggaran->tahun : null,
-            // Urusan
             // Urusan
             $realisasi->anggaran ? $realisasi->anggaran->subKegiatan->kegiatan->program->subSkpd->skpd->urusanPelaksana->urusan->kode : ($kode_parts[0] ?? null),
             $realisasi->anggaran ? $realisasi->anggaran->subKegiatan->kegiatan->program->subSkpd->skpd->urusanPelaksana->urusan->nama : null,
@@ -81,6 +68,8 @@ class ExportDataLaporan implements FromCollection, WithHeadings, WithMapping, Sh
             // Sub Rincian Obyek Akun
             $realisasi->anggaran ? $realisasi->anggaran->subRincianObyekAkun->kode : ($kode_parts[12] ?? null),
             $realisasi->anggaran ? $realisasi->anggaran->subRincianObyekAkun->nama : null,
+            // Nilai Anggaran
+            $realisasi->anggaran ? $realisasi->anggaran->nilai_anggaran : 0,
             // Nilai dan Tahun
             $realisasi->nilai_realisasi,
         ];
@@ -116,6 +105,7 @@ class ExportDataLaporan implements FromCollection, WithHeadings, WithMapping, Sh
             'Nama Rincian Obyek Akun',
             'Kode Sub Rincian Obyek Akun',
             'Nama Sub Rincian Obyek Akun',
+            'Nilai Anggaran',
             'Nilai Realisasi',
         ];
     }

@@ -1,5 +1,6 @@
 <?php
 
+use App\Exports\ExportDataLaporan;
 use App\Exports\ExportDataRealisasi;
 use Livewire\Volt\Component;
 use App\Models\Urusan;
@@ -345,9 +346,8 @@ new class extends Component {
     public function downloadExcel()
     {
         // bedasarkan get data realisasi
-        $realisasi = $this->getDataRealisasi();
-        dd($realisasi);
-        // return Excel::download(new ExportDataRealisasi($realisasi), 'realisasi-'.'-'.date('Y-m-d').'.xlsx');
+        $this->realisasi = $this->getDataRealisasi();
+        return Excel::download(new ExportDataLaporan($this->realisasi), 'realisasi-'.'-'.date('Y-m-d').'.xlsx');
     }
 
     public function reload(){
