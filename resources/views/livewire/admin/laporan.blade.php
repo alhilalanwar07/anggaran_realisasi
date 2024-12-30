@@ -59,6 +59,7 @@ new class extends Component {
     public $anggaran_id;
 
     public $realisasiAda = false;
+    public $grafikAda = false;
 
     public $colors = [],
         $labels = [],
@@ -348,6 +349,11 @@ new class extends Component {
         dd($realisasi);
         // return Excel::download(new ExportDataRealisasi($realisasi), 'realisasi-'.'-'.date('Y-m-d').'.xlsx');
     }
+
+    public function reload(){
+        // refresh page
+        return redirect('/laporan');
+    }
 }; ?>
 
 <div>
@@ -561,6 +567,7 @@ new class extends Component {
 
                     <div class="col-md-6 align-content-end">
                         <div class="form-group mb-3 d-flex justify-content-end gap-2">
+                            @if (!$realisasiAda)                                
                             {{-- <label>Cetak</label> --}}
                             <button wire:click="downloadExcel" class="btn btn-success btn-sm btn-block p-3">
                                 <span class="btn-label">
@@ -590,6 +597,17 @@ new class extends Component {
                                     <span class="visually-hidden">Loading...</span>
                                 </div>
                             </button>
+                            @else
+                            <button wire:click="reload" class="btn btn-danger btn-sm btn-block p-3">
+                                <span class="btn-label">
+                                    <i class="fa fa-redo"></i>
+                                </span>
+                                Reload
+                                <div wire:loading wire:target="reload" class="spinner-border spinner-border-sm" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </button>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -597,7 +615,7 @@ new class extends Component {
         </div>
     </div>
 
-    <div class="accordion accordion-secondary">
+        @if ($grafikAda)
         <div class="card">
             <div class="card-header" id="headingOne" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
                 <div class="span-title">Grafik Laporan</div>
@@ -655,14 +673,14 @@ new class extends Component {
         </div>
       --}}
         </div>
+        @endif
+        @if ($realisasiAda)
+
         <div class="card">
-            <!-- <div class="card-header collapsed" id="headingTwo" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo"> -->
             <div class="card-header">
                 <div class="span-title">Tabel Laporan</div>
                 <div class="span-mode"></div>
             </div>
-            <!-- </div> -->
-            <!-- <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordion"> -->
             <div class="card-body">
                 <div class="table-responsive">
                     <table class="table table-hover">
@@ -678,7 +696,6 @@ new class extends Component {
                             </tr>
                         </thead>
                         <tbody>
-                            @if ($realisasiAda)
                             <tr class="table-info">
                                 <td colspan="4">Total</td>
                                 <td>Rp {{ number_format($realisasi->sum(fn ($item) => $item->anggaran->rawNilaiAnggaran), 0, ",", ".") }}</td>
@@ -698,16 +715,11 @@ new class extends Component {
                                 <td>{{ $item->tahun }}</td>
                             </tr>
                             @endforeach
-                            @else
-                            <tr>
-                                <td colspan="7">Tidak ada data yang tersedia.</td>
-                            </tr>
-                            @endif
                         </tbody>
                     </table>
                 </div>
 
             </div>
         </div>
-    </div>
+        @endif
 </div>
