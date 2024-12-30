@@ -337,6 +337,15 @@ new class extends Component {
     {
         $this->realisasi = $this->getDataRealisasi();
 
+        if ($this->realisasi->isEmpty()) {
+            $this->dispatch('tambahAlertToast', detail: [
+                'type' => 'warning',
+                'title' => 'Data Kosong',
+                'message' => 'Harap pilih kembali data yang akan ditampilkan',
+            ]);
+            return;
+        }
+
         $this->realisasiAda = true;
 
         // dd($this->realisasi);
@@ -347,10 +356,30 @@ new class extends Component {
     {
         // bedasarkan get data realisasi
         $this->realisasi = $this->getDataRealisasi();
-        return Excel::download(new ExportDataLaporan($this->realisasi), 'realisasi-'.'-'.date('Y-m-d').'.xlsx');
+
+        // validasi jika tidak ada data
+        try {
+            if ($this->realisasi->isEmpty()) {
+                $this->dispatch('tambahAlertToast', detail: [
+                    'type' => 'warning',
+                    'title' => 'Data Kosong',
+                    'message' => 'Harap pilih kembali data yang akan diunduh',
+                ]);
+                return;
+            }
+            $this->dispatch('fileDownloaded');
+            return Excel::download(new ExportDataLaporan($this->realisasi), 'realisasi-' . date('Y-m-d_H-i-s') . '.xlsx');
+        } catch (\Exception $e) {
+            $this->dispatch('tambahAlertToast', detail: [
+                'type' => 'error',
+                'title' => 'Error',
+                'message' => 'Terjadi kesalahan saat mengunduh file: ' . $e->getMessage(),
+            ]);
+        }
     }
 
-    public function reload(){
+    public function reload()
+    {
         // refresh page
         return redirect('/laporan');
     }
@@ -567,7 +596,7 @@ new class extends Component {
 
                     <div class="col-md-6 align-content-end">
                         <div class="form-group mb-3 d-flex justify-content-end gap-2">
-                            @if (!$realisasiAda)                                
+                            @if (!$realisasiAda)
                             {{-- <label>Cetak</label> --}}
                             <button wire:click="downloadExcel" class="btn btn-success btn-sm btn-block p-3">
                                 <span class="btn-label">
@@ -615,14 +644,14 @@ new class extends Component {
         </div>
     </div>
 
-        @if ($grafikAda)
-        <div class="card">
-            <div class="card-header" id="headingOne" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
-                <div class="span-title">Grafik Laporan</div>
-                <div class="span-mode"></div>
-            </div>
+    @if ($grafikAda)
+    <div class="card">
+        <div class="card-header" id="headingOne" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+            <div class="span-title">Grafik Laporan</div>
+            <div class="span-mode"></div>
+        </div>
 
-            {{--
+        {{--
         <div id="collapseOne" class="collapse" aria-labelledby="headingOne" data-parent="#accordion">
         <div class="card-body">
         <div class="row">
@@ -672,54 +701,113 @@ new class extends Component {
         </div>
         </div>
       --}}
-        </div>
-        @endif
-        @if ($realisasiAda)
+    </div>
+    @endif
+    @if ($realisasiAda)
 
-        <div class="card">
-            <div class="card-header">
-                <div class="span-title">Tabel Laporan</div>
-                <div class="span-mode"></div>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>SKPD</th>
-                                <th>Kegiatan</th>
-                                <th>Akun</th>
-                                <th>Nilai Anggaran</th>
-                                <th>Nilai Realisasi</th>
-                                <th>Tahun</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr class="table-info">
-                                <td colspan="4">Total</td>
-                                <td>Rp {{ number_format($realisasi->sum(fn ($item) => $item->anggaran->rawNilaiAnggaran), 0, ",", ".") }}</td>
-                                <td>Rp {{ number_format($realisasi->sum(fn ($item) => $item->rawNilaiRealisasi), 0, ",", ".") }}</td>
-                                <td></td>
-                            </tr>
-                            @foreach ($realisasi as $item)
-                            <tr>
-                                <td>{{ $loop->iteration }}</td>
-                                <td>
-                                    [{{ $item->anggaran->subKegiatan->kegiatan->program->subSkpd->skpd->kode }}] {{ $item->anggaran->subKegiatan->kegiatan->program->subSkpd->skpd->nama }}
-                                </td>
-                                <td>[{{ $item->anggaran->subKegiatan->kegiatan->kode }}] {{ $item->anggaran->subKegiatan->kegiatan->nama }}</td>
-                                <td>[{{ $item->anggaran->subRincianObyekAkun->kode }}] {{ $item->anggaran->subRincianObyekAkun->nama }}</td>
-                                <td>{{ $item->anggaran->nilai_anggaran }}</td>
-                                <td>{{ $item->nilai_realisasi }}</td>
-                                <td>{{ $item->tahun }}</td>
-                            </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-
-            </div>
+    <div class="card">
+        <div class="card-header">
+            <div class="span-title">Tabel Laporan</div>
+            <div class="span-mode"></div>
         </div>
-        @endif
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>SKPD</th>
+                            <th>Kegiatan</th>
+                            <th>Akun</th>
+                            <th>Nilai Anggaran</th>
+                            <th>Nilai Realisasi</th>
+                            <th>Tahun</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="table-info">
+                            <td colspan="4">Total</td>
+                            <td>Rp {{ number_format($realisasi->sum(fn ($item) => $item->anggaran->rawNilaiAnggaran), 0, ",", ".") }}</td>
+                            <td>Rp {{ number_format($realisasi->sum(fn ($item) => $item->rawNilaiRealisasi), 0, ",", ".") }}</td>
+                            <td></td>
+                        </tr>
+                        @foreach ($realisasi as $item)
+                        <tr>
+                            <td>{{ $loop->iteration }}</td>
+                            <td>
+                                [{{ $item->anggaran->subKegiatan->kegiatan->program->subSkpd->skpd->kode }}] {{ $item->anggaran->subKegiatan->kegiatan->program->subSkpd->skpd->nama }}
+                            </td>
+                            <td>[{{ $item->anggaran->subKegiatan->kegiatan->kode }}] {{ $item->anggaran->subKegiatan->kegiatan->nama }}</td>
+                            <td>[{{ $item->anggaran->subRincianObyekAkun->kode }}] {{ $item->anggaran->subRincianObyekAkun->nama }}</td>
+                            <td>{{ $item->anggaran->nilai_anggaran }}</td>
+                            <td>{{ $item->nilai_realisasi }}</td>
+                            <td>{{ $item->tahun }}</td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </div>
+    @endif
+
+
+    <script>
+        document.addEventListener('livewire:init', function () {
+            Livewire.on('fileDownloaded', () => {
+            window.location.reload();
+            });
+
+            Livewire.on('tambahAlertToast', (event) => {
+                const data = event.detail;
+                if (!data) {
+                    console.error('Event detail is missing');
+                    return;
+                }
+                swal({
+                    title: data.title,
+                    text: data.message,
+                    icon: data.type,
+                    buttons: {
+                        confirm: {
+                            text: "Ok",
+                            value: true,
+                            visible: true,
+                            className: "btn btn-success",
+                            closeModal: true
+                        }
+                    },
+                    timer: 2500,
+                    timerProgressBar: true
+                });
+
+                setTimeout(function() { window.location.reload(); }, 2500);
+            });
+
+            Livewire.on('errorAlertToast', (event) => {
+            const data = event;
+            swal({
+                title: "Error",
+                text: "Terjadi kesalahan",
+                icon: "error",
+                buttons: {
+                confirm: {
+                    text: "Ok",
+                    value: true,
+                    visible: true,
+                    className: "btn btn-danger",
+                    closeModal: true
+                }
+                },
+                timer: 2000,
+                timerProgressBar: true
+            });
+            });
+
+            Livewire.on("toast", (event) => {
+                toastr[event.notify](event.message);
+            });
+        });
+    </script>
 </div>
