@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Anggaran extends Model
 {
@@ -45,9 +46,9 @@ class Anggaran extends Model
         return $this->attributes['nilai_realisasi'];
     }
 
-    public function subKegiatan()
+    public function subKegiatan(): BelongsTo
     {
-        return $this->belongsTo(SubKegiatan::class);
+        return $this->belongsTo(SubKegiatan::class, 'sub_kegiatan_id');
     }
 
     public function subRincianObyekAkun()

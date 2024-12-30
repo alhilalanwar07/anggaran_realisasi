@@ -18,4 +18,10 @@ class SubKegiatan extends Model
     {
         return self::firstOrCreate(['kode' => $kode, 'nama' => $nama, 'kegiatan_id' => $kegiatanId]);
     }
+
+    // ke anggaran
+    public function anggaran()
+    {
+        return $this->hasMany(Anggaran::class);
+    }   
 }

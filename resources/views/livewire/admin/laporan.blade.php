@@ -1,5 +1,6 @@
 <?php
 
+use App\Exports\ExportDataRealisasi;
 use Livewire\Volt\Component;
 use App\Models\Urusan;
 use App\Models\UrusanPelaksana;
@@ -19,12 +20,12 @@ use App\Models\Realisasi;
 use function Livewire\Volt\{computed, state};
 use Livewire\WithPagination;
 use App\Exports\RealisasiExport;
-
+use Maatwebsite\Excel\Facades\Excel;
 
 new class extends Component {
     use WithPagination;
 
-    protected $paginationTheme = 'bootstrap';
+    protected $paginationTheme = "bootstrap";
 
     public $urusan = [];
     public $urusanPelaksana = [];
@@ -39,7 +40,7 @@ new class extends Component {
     public $obyekAkun = [];
     public $rincianObyekAkun = [];
     public $subRincianObyekAkun = [];
-    public $tahun = [];
+    public $tahun;
     public $realisasi = [];
 
     public $urusan_id;
@@ -55,30 +56,30 @@ new class extends Component {
     public $obyek_akun_id;
     public $rincian_obyek_akun_id;
     public $sub_rincian_obyek_akun_id;
-    public $tahun_id;
+    public $anggaran_id;
 
     public $realisasiAda = false;
 
-    public $colors = [], $labels = [], $data = []; // untuk chart
+    public $colors = [],
+        $labels = [],
+        $data = []; // untuk chart
 
     public function with(): array
     {
-
         return [
-            'urusanPelaksana' => $this->getDataUrusanPelaksana($this->urusan_id),
-            'skpd' => $this->getDataSkpd($this->urusan_pelaksana_id),
-            'subSkpd' => $this->getDataSubSkpd($this->skpd_id),
-            'program' => $this->getDataProgram($this->sub_skpd_id),
-            'kegiatan' => $this->getDataKegiatan($this->program_id),
-            'subKegiatan' => $this->getDataSubKegiatan($this->kegiatan_id),
-            'kelompokAkun' => $this->getDataKelompokAkun($this->akun_id),
-            'jenisAkun' => $this->getDataJenisAkun($this->kelompok_akun_id),
-            'obyekAkun' => $this->getDataObyekAkun($this->jenis_akun_id),
-            'rincianObyekAkun' => $this->getDataRincianObyekAkun($this->obyek_akun_id),
-            'subRincianObyekAkun' => $this->getDataSubRincianObyekAkun($this->rincian_obyek_akun_id),
-            'tahun' => $this->getDataTahun(),
+            "urusanPelaksana" => $this->getDataUrusanPelaksana($this->urusan_id),
+            "skpd" => $this->getDataSkpd($this->urusan_pelaksana_id),
+            "subSkpd" => $this->getDataSubSkpd($this->skpd_id),
+            "program" => $this->getDataProgram($this->sub_skpd_id),
+            "kegiatan" => $this->getDataKegiatan($this->program_id),
+            "subKegiatan" => $this->getDataSubKegiatan($this->kegiatan_id),
+            "kelompokAkun" => $this->getDataKelompokAkun($this->akun_id),
+            "jenisAkun" => $this->getDataJenisAkun($this->kelompok_akun_id),
+            "obyekAkun" => $this->getDataObyekAkun($this->jenis_akun_id),
+            "rincianObyekAkun" => $this->getDataRincianObyekAkun($this->obyek_akun_id),
+            "subRincianObyekAkun" => $this->getDataSubRincianObyekAkun($this->rincian_obyek_akun_id),
+            // 'tahun' => $this->getDataTahun(),
             // 'realisasi' => $this->getDataRealisasi(),
-            
         ];
     }
 
@@ -86,23 +87,19 @@ new class extends Component {
     {
         $colors = [];
         for ($i = 0; $i < $count; $i++) {
-            $colors[] = '#' . substr(str_shuffle('ABCDEF0123456789'), 0, 6);
+            $colors[] = "#" . substr(str_shuffle("ABCDEF0123456789"), 0, 6);
         }
         return $colors;
     }
 
     public function formatRupiah($angka)
     {
-        $hasil_rupiah = "Rp " . number_format($angka, 2, ',', '.');
+        $hasil_rupiah = "Rp " . number_format($angka, 2, ",", ".");
         return $hasil_rupiah;
     }
 
-    public function downloadExcel()
+    public function mount()
     {
-        return (new RealisasiExport($this->realisasi))->download('realisasi.xlsx');
-    }
-
-    public function mount(){
         $this->urusan = $this->getDataUrusan();
         $this->akun = $this->getDataAkun();
     }
@@ -110,138 +107,247 @@ new class extends Component {
     public function updatedUrusanId($value)
     {
         $this->urusanPelaksana = $this->getDataUrusanPelaksana($value);
-        $this->reset(['urusan_pelaksana_id', 'skpd_id', 'sub_skpd_id', 'program_id', 'kegiatan_id', 'sub_kegiatan_id']);
+        $this->reset(["urusan_pelaksana_id", "skpd_id", "sub_skpd_id", "program_id", "kegiatan_id", "sub_kegiatan_id"]);
     }
 
     public function updatedUrusanPelaksanaId($value)
     {
         $this->skpd = $this->getDataSkpd($value);
-        $this->reset(['skpd_id', 'sub_skpd_id', 'program_id', 'kegiatan_id', 'sub_kegiatan_id']);
+        $this->reset(["skpd_id", "sub_skpd_id", "program_id", "kegiatan_id", "sub_kegiatan_id"]);
     }
 
     public function updatedSkpdId($value)
     {
         $this->subSkpd = $this->getDataSubSkpd($value);
-        $this->reset(['sub_skpd_id', 'program_id', 'kegiatan_id', 'sub_kegiatan_id']);
+        $this->reset(["sub_skpd_id", "program_id", "kegiatan_id", "sub_kegiatan_id"]);
     }
 
     public function updatedSubSkpdId($value)
     {
         $this->program = $this->getDataProgram($value);
-        $this->reset(['program_id', 'kegiatan_id', 'sub_kegiatan_id']);
+        $this->reset(["program_id", "kegiatan_id", "sub_kegiatan_id"]);
     }
 
     public function updatedProgramId($value)
     {
         $this->kegiatan = $this->getDataKegiatan($value);
-        $this->reset(['kegiatan_id', 'sub_kegiatan_id']);
+        $this->reset(["kegiatan_id", "sub_kegiatan_id"]);
     }
 
     public function updatedKegiatanId($value)
     {
         $this->subKegiatan = $this->getDataSubKegiatan($value);
-        $this->reset(['sub_kegiatan_id']);
+        $this->reset(["sub_kegiatan_id"]);
     }
 
     public function updatedAkunId($value)
     {
         $this->kelompokAkun = $this->getDataKelompokAkun($value);
-        $this->reset(['kelompok_akun_id', 'jenis_akun_id', 'obyek_akun_id', 'rincian_obyek_akun_id', 'sub_rincian_obyek_akun_id']);
+        $this->reset(["kelompok_akun_id", "jenis_akun_id", "obyek_akun_id", "rincian_obyek_akun_id", "sub_rincian_obyek_akun_id"]);
     }
 
     public function updatedKelompokAkunId($value)
     {
         $this->jenisAkun = $this->getDataJenisAkun($value);
-        $this->reset(['jenis_akun_id', 'obyek_akun_id', 'rincian_obyek_akun_id', 'sub_rincian_obyek_akun_id']);
+        $this->reset(["jenis_akun_id", "obyek_akun_id", "rincian_obyek_akun_id", "sub_rincian_obyek_akun_id"]);
     }
 
     public function updatedJenisAkunId($value)
     {
         $this->obyekAkun = $this->getDataObyekAkun($value);
-        $this->reset(['obyek_akun_id', 'rincian_obyek_akun_id', 'sub_rincian_obyek_akun_id']);
+        $this->reset(["obyek_akun_id", "rincian_obyek_akun_id", "sub_rincian_obyek_akun_id"]);
     }
 
     public function updatedObyekAkunId($value)
     {
         $this->rincianObyekAkun = $this->getDataRincianObyekAkun($value);
-        $this->reset(['rincian_obyek_akun_id', 'sub_rincian_obyek_akun_id']);
+        $this->reset(["rincian_obyek_akun_id", "sub_rincian_obyek_akun_id"]);
     }
 
     public function updatedRincianObyekAkunId($value)
     {
         $this->subRincianObyekAkun = $this->getDataSubRincianObyekAkun($value);
-        $this->reset(['sub_rincian_obyek_akun_id']);
+        $this->reset(["sub_rincian_obyek_akun_id"]);
     }
 
-    public function updatedTahunId($value)
+    public function getDataUrusan()
     {
-        $this->tahun = $this->getDataTahun();
+        return Urusan::orderBy("kode")->get();
     }
 
-    public function getDataUrusan(){
-        return Urusan::orderBy('kode')->get();
+    public function getDataUrusanPelaksana($urusan_id)
+    {
+        return UrusanPelaksana::where("urusan_id", $urusan_id)
+            ->orderBy("kode")
+            ->get();
     }
 
-    public function getDataUrusanPelaksana($urusan_id){
-        return UrusanPelaksana::where('urusan_id', $urusan_id)->orderBy('kode')->get();
+    public function getDataSkpd($urusan_pelaksana_id)
+    {
+        return Skpd::where("urusan_pelaksana_id", $urusan_pelaksana_id)
+            ->orderBy("kode")
+            ->get();
     }
 
-    public function getDataSkpd($urusan_pelaksana_id){
-        return Skpd::where('urusan_pelaksana_id', $urusan_pelaksana_id)->orderBy('kode')->get();
+    public function getDataSubSkpd($skpd_id)
+    {
+        return SubSkpd::where("skpd_id", $skpd_id)
+            ->orderBy("kode")
+            ->get();
     }
 
-    public function getDataSubSkpd($skpd_id){
-        return SubSkpd::where('skpd_id', $skpd_id)->orderBy('kode')->get();
+    public function getDataProgram($sub_skpd_id)
+    {
+        return Program::where("sub_skpd_id", $sub_skpd_id)
+            ->orderBy("kode")
+            ->get();
     }
 
-    public function getDataProgram($sub_skpd_id){
-        return Program::where('sub_skpd_id', $sub_skpd_id)->orderBy('kode')->get();
+    public function getDataKegiatan($program_id)
+    {
+        return Kegiatan::where("program_id", $program_id)
+            ->orderBy("kode")
+            ->get();
     }
 
-    public function getDataKegiatan($program_id){
-        return Kegiatan::where('program_id', $program_id)->orderBy('kode')->get();
+    public function getDataSubKegiatan($kegiatan_id)
+    {
+        return SubKegiatan::where("kegiatan_id", $kegiatan_id)
+            ->orderBy("kode")
+            ->get();
     }
 
-    public function getDataSubKegiatan($kegiatan_id){
-        return SubKegiatan::where('kegiatan_id', $kegiatan_id)->orderBy('kode')->get();
+    public function getDataAkun()
+    {
+        return Akun::orderBy("kode")->get();
     }
 
-    public function getDataAkun(){
-        return Akun::orderBy('kode')->get();
+    public function getDataKelompokAkun($akun_id)
+    {
+        return KelompokAkun::where("akun_id", $akun_id)
+            ->orderBy("kode")
+            ->get();
     }
 
-    public function getDataKelompokAkun($akun_id){
-        return KelompokAkun::where('akun_id', $akun_id)->orderBy('kode')->get();
+    public function getDataJenisAkun($kelompok_akun_id)
+    {
+        return JenisAkun::where("kelompok_akun_id", $kelompok_akun_id)
+            ->orderBy("kode")
+            ->get();
     }
 
-    public function getDataJenisAkun($kelompok_akun_id){
-        return JenisAkun::where('kelompok_akun_id', $kelompok_akun_id)->orderBy('kode')->get();
+    public function getDataObyekAkun($jenis_akun_id)
+    {
+        return ObyekAkun::where("jenis_akun_id", $jenis_akun_id)
+            ->orderBy("kode")
+            ->get();
     }
 
-    public function getDataObyekAkun($jenis_akun_id){
-        return ObyekAkun::where('jenis_akun_id', $jenis_akun_id)->orderBy('kode')->get();
+    public function getDataRincianObyekAkun($obyek_akun_id)
+    {
+        return RincianObyekAkun::where("obyek_akun_id", $obyek_akun_id)
+            ->orderBy("kode")
+            ->get();
     }
 
-    public function getDataRincianObyekAkun($obyek_akun_id){
-        return RincianObyekAkun::where('obyek_akun_id', $obyek_akun_id)->orderBy('kode')->get();
+    public function getDataSubRincianObyekAkun($rincian_obyek_akun_id)
+    {
+        return SubRincianObyekAkun::where("rincian_obyek_akun_id", $rincian_obyek_akun_id)
+            ->orderBy("kode")
+            ->get();
     }
 
-    public function getDataSubRincianObyekAkun($rincian_obyek_akun_id){
-        return SubRincianObyekAkun::where('rincian_obyek_akun_id', $rincian_obyek_akun_id)->orderBy('kode')->get();
+    public function getDataRealisasi()
+    {
+        // Proteksi data apa yang terisi dari form
+        $this->validate([
+            "urusan_id" => "nullable|exists:App\Models\Urusan,id",
+            "urusan_pelaksana_id" => "nullable|exists:App\Models\UrusanPelaksana,id",
+            "skpd_id" => "nullable|exists:App\Models\Skpd,id",
+            "sub_skpd_id" => "nullable|exists:App\Models\SubSkpd,id",
+            "program_id" => "nullable|exists:App\Models\Program,id",
+            "kegiatan_id" => "nullable|exists:App\Models\Kegiatan,id",
+            "sub_kegiatan_id" => "nullable|exists:App\Models\SubKegiatan,id",
+            "akun_id" => "nullable|exists:App\Models\Akun,id",
+            "kelompok_akun_id" => "nullable|exists:App\Models\KelompokAkun,id",
+            "jenis_akun_id" => "nullable|exists:App\Models\JenisAkun,id",
+            "obyek_akun_id" => "nullable|exists:App\Models\ObyekAkun,id",
+            "rincian_obyek_akun_id" => "nullable|exists:App\Models\RincianObyekAkun,id",
+            "sub_rincian_obyek_akun_id" => "nullable|exists:App\Models\SubRincianObyekAkun,id",
+            "tahun" => "nullable|integer",
+        ]);
+
+        $query = Realisasi::query();
+
+        $filters = [
+            "urusan_id" => "anggaran.subKegiatan.kegiatan.program.subSkpd.skpd.urusanPelaksana.urusan",
+            "urusan_pelaksana_id" => "anggaran.subKegiatan.kegiatan.program.subSkpd.skpd.urusanPelaksana",
+            "skpd_id" => "anggaran.subKegiatan.kegiatan.program.subSkpd.skpd",
+            "sub_skpd_id" => "anggaran.subKegiatan.kegiatan.program.subSkpd",
+            "program_id" => "anggaran.subKegiatan.kegiatan.program",
+            "kegiatan_id" => "anggaran.subKegiatan.kegiatan",
+            "sub_kegiatan_id" => "anggaran.subKegiatan",
+            "akun_id" => "anggaran.subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun.akun",
+            "kelompok_akun_id" => "anggaran.subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun",
+            "jenis_akun_id" => "anggaran.subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun",
+            "obyek_akun_id" => "anggaran.subRincianObyekAkun.rincianObyekAkun.obyekAkun",
+            "rincian_obyek_akun_id" => "anggaran.subRincianObyekAkun.rincianObyekAkun",
+            "sub_rincian_obyek_akun_id" => "anggaran.subRincianObyekAkun",
+        ];
+
+        $hasFilters = false;
+
+        foreach ($filters as $key => $relation) {
+            if ($this->$key) {
+                $hasFilters = true;
+                $query->whereHas($relation, function ($q) use ($key) {
+                    $q->where("id", $this->$key);
+                });
+            }
+        }
+
+        if ($this->tahun) {
+            $hasFilters = true;
+            $query->where("tahun", $this->tahun);
+        }
+
+        // Handle case where anggaran_id is null
+        if ($hasFilters) {
+            $query->orWhereNull("anggaran_id")->where("tahun", $this->tahun);
+        } else {
+            // jika tidak memilih apa-apa
+            $realisasi = Realisasi::all();
+        }
+
+        $realisasi = $query->get();
+
+        // Set anggaran_id to #N/A for records with null anggaran_id
+        foreach ($realisasi as $item) {
+            if (is_null($item->anggaran_id)) {
+                $item->anggaran_id = "#N/A";
+            }
+        }
+
+        return $realisasi;
     }
 
-    public function getDataTahun(){
-        return Realisasi::select('tahun')->distinct()->orderBy('tahun')->get();
-    }
-
-    public function tampilkanRealisasi(){
-        $this->realisasiAda = true;
-
+    public function tampilkanRealisasi()
+    {
         $this->realisasi = $this->getDataRealisasi();
 
-        dd($this->realisasi);
+        $this->realisasiAda = true;
+
+        // dd($this->realisasi);
     }
 
+    // download excel
+    public function downloadExcel()
+    {
+        // bedasarkan get data realisasi
+        $realisasi = $this->getDataRealisasi();
+        dd($realisasi);
+        // return Excel::download(new ExportDataRealisasi($realisasi), 'realisasi-'.'-'.date('Y-m-d').'.xlsx');
+    }
 }; ?>
 
 <div>
@@ -263,7 +369,7 @@ new class extends Component {
                             <label>Urusan</label>
                             <select wire:model.live="urusan_id" class="form-select" wire:change="with">
                                 <option value="">Pilih Urusan</option>
-                                @foreach($urusan as $u)
+                                @foreach ($urusan as $u)
                                 <option value="{{ $u->id }}">[{{ $u->kode }}] {{ $u->nama }}</option>
                                 @endforeach
                             </select>
@@ -277,7 +383,7 @@ new class extends Component {
                             <label>Urusan Pelaksana</label>
                             <select wire:model.live="urusan_pelaksana_id" class="form-select" wire:change="with">
                                 <option value="">Pilih Urusan Pelaksana</option>
-                                @foreach($urusanPelaksana as $up)
+                                @foreach ($urusanPelaksana as $up)
                                 <option value="{{ $up->id }}">[{{ $up->kode }}] {{ $up->nama }}</option>
                                 @endforeach
                             </select>
@@ -291,7 +397,7 @@ new class extends Component {
                             <label>SKPD</label>
                             <select wire:model.live="skpd_id" class="form-select" wire:change="with">
                                 <option value="">Pilih SKPD</option>
-                                @foreach($skpd as $s)
+                                @foreach ($skpd as $s)
                                 <option value="{{ $s->id }}">[{{ $s->kode }}] {{ $s->nama }}</option>
                                 @endforeach
                             </select>
@@ -305,7 +411,7 @@ new class extends Component {
                             <label>Sub SKPD</label>
                             <select wire:model.live="sub_skpd_id" class="form-select" wire:change="with">
                                 <option value="">Pilih Sub SKPD</option>
-                                @foreach($subSkpd as $ss)
+                                @foreach ($subSkpd as $ss)
                                 <option value="{{ $ss->id }}">[{{ $ss->kode }}] {{ $ss->nama }}</option>
                                 @endforeach
                             </select>
@@ -319,7 +425,7 @@ new class extends Component {
                             <label>Program</label>
                             <select wire:model.live="program_id" class="form-select" wire:change="with">
                                 <option value="">Pilih Program</option>
-                                @foreach($program as $p)
+                                @foreach ($program as $p)
                                 <option value="{{ $p->id }}">[{{ $p->kode }}] {{ $p->nama }}</option>
                                 @endforeach
                             </select>
@@ -333,7 +439,7 @@ new class extends Component {
                             <label>Kegiatan</label>
                             <select wire:model.live="kegiatan_id" class="form-select" wire:change="with">
                                 <option value="">Pilih Kegiatan</option>
-                                @foreach($kegiatan as $k)
+                                @foreach ($kegiatan as $k)
                                 <option value="{{ $k->id }}">[{{ $k->kode }}] {{ $k->nama }}</option>
                                 @endforeach
                             </select>
@@ -347,7 +453,7 @@ new class extends Component {
                             <label>Sub Kegiatan</label>
                             <select wire:model.live="sub_kegiatan_id" class="form-select" wire:change="with">
                                 <option value="">Pilih Sub Kegiatan</option>
-                                @foreach($subKegiatan as $sk)
+                                @foreach ($subKegiatan as $sk)
                                 <option value="{{ $sk->id }}">[{{ $sk->kode }}] {{ $sk->nama }}</option>
                                 @endforeach
                             </select>
@@ -361,7 +467,7 @@ new class extends Component {
                             <label>Akun</label>
                             <select wire:model.live="akun_id" class="form-select" wire:change="with">
                                 <option value="">Pilih Akun</option>
-                                @foreach($akun as $a)
+                                @foreach ($akun as $a)
                                 <option value="{{ $a->id }}">[{{ $a->kode }}] {{ $a->nama }}</option>
                                 @endforeach
                             </select>
@@ -375,7 +481,7 @@ new class extends Component {
                             <label>Kelompok Akun</label>
                             <select wire:model.live="kelompok_akun_id" class="form-select" wire:change="with">
                                 <option value="">Pilih Kelompok Akun</option>
-                                @foreach($kelompokAkun as $ka)
+                                @foreach ($kelompokAkun as $ka)
                                 <option value="{{ $ka->id }}">[{{ $ka->kode }}] {{ $ka->nama }}</option>
                                 @endforeach
                             </select>
@@ -389,7 +495,7 @@ new class extends Component {
                             <label>Jenis Akun</label>
                             <select wire:model.live="jenis_akun_id" class="form-select" wire:change="with">
                                 <option value="">Pilih Jenis Akun</option>
-                                @foreach($jenisAkun as $ja)
+                                @foreach ($jenisAkun as $ja)
                                 <option value="{{ $ja->id }}">[{{ $ja->kode }}] {{ $ja->nama }}</option>
                                 @endforeach
                             </select>
@@ -403,7 +509,7 @@ new class extends Component {
                             <label>Obyek Akun</label>
                             <select wire:model.live="obyek_akun_id" class="form-select" wire:change="with">
                                 <option value="">Pilih Obyek Akun</option>
-                                @foreach($obyekAkun as $oa)
+                                @foreach ($obyekAkun as $oa)
                                 <option value="{{ $oa->id }}">[{{ $oa->kode }}] {{ $oa->nama }}</option>
                                 @endforeach
                             </select>
@@ -417,7 +523,7 @@ new class extends Component {
                             <label>Rincian Obyek Akun</label>
                             <select wire:model.live="rincian_obyek_akun_id" class="form-select" wire:change="with">
                                 <option value="">Pilih Rincian Obyek Akun</option>
-                                @foreach($rincianObyekAkun as $roa)
+                                @foreach ($rincianObyekAkun as $roa)
                                 <option value="{{ $roa->id }}">[{{ $roa->kode }}] {{ $roa->nama }}</option>
                                 @endforeach
                             </select>
@@ -431,7 +537,7 @@ new class extends Component {
                             <label>Sub Rincian Obyek Akun</label>
                             <select wire:model.live="sub_rincian_obyek_akun_id" class="form-select" wire:change="with">
                                 <option value="">Pilih Sub Rincian Obyek Akun</option>
-                                @foreach($subRincianObyekAkun as $sroa)
+                                @foreach ($subRincianObyekAkun as $sroa)
                                 <option value="{{ $sroa->id }}">[{{ $sroa->kode }}] {{ $sroa->nama }}</option>
                                 @endforeach
                             </select>
@@ -443,12 +549,13 @@ new class extends Component {
                     <div class="col-md-3">
                         <div class="form-group mb-3">
                             <label>Tahun</label>
-                            <select wire:model.live="tahun_id" class="form-select" wire:change="with">
+                            <select wire:model.live="tahun" class="form-select" wire:change="with">
                                 <option value="">Pilih Tahun</option>
-                                @for($year = 2021; $year <= 2025; $year++) <option value="{{ $year }}">{{ $year }}</option>
-                                    @endfor
+                                @for ($i = date('Y'); $i >= 2020; $i--)
+                                <option value="{{ $i }}">{{ $i }}</option>
+                                @endfor
                             </select>
-                            <div wire:loading wire:target="tahun_id" class="text-success">Memuat...</div>
+                            <div wire:loading wire:target="tahun" class="text-success">Memuat...</div>
                         </div>
                     </div>
 
@@ -460,7 +567,9 @@ new class extends Component {
                                     <i class="fa fa-print"></i>
                                 </span>
                                 Cetak Excel
-                                <div wire:loading wire:target="downloadExcel" class="text-success">Memuat...</div>
+                                <div wire:loading wire:target="downloadExcel" class="spinner-border spinner-border-sm" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
                             </button>
                             <!-- tombol Tampilkan Grafik, Tombol Tampilkan Tabel -->
                             <button wire:click="tampilkanRealisasi" class="btn btn-primary btn-sm btn-block p-3">
@@ -468,14 +577,18 @@ new class extends Component {
                                     <i class="fa fa-table"></i>
                                 </span>
                                 Tampilkan Tabel
-                                <div wire:loading wire:target="tampilkanRealisasi" class="text-success">Memuat...</div>
+                                <div wire:loading wire:target="tampilkanRealisasi" class="spinner-border spinner-border-sm" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
                             </button>
-                            <button wire:click="downloadExcel" class="btn btn-secondary btn-sm btn-block p-3">
+                            <button wire:click="tampilkanGrafik" class="btn btn-secondary btn-sm btn-block p-3">
                                 <span class="btn-label">
                                     <i class="fa fa-chart-bar"></i>
                                 </span>
                                 Tampilkan Grafik
-                                <div wire:loading wire:target="downloadExcel" class="text-success">Memuat...</div>
+                                <div wire:loading wire:target="tampilkanGrafik" class="spinner-border spinner-border-sm" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
                             </button>
                         </div>
                     </div>
@@ -487,114 +600,114 @@ new class extends Component {
     <div class="accordion accordion-secondary">
         <div class="card">
             <div class="card-header" id="headingOne" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
-                <div class="span-title">
-                    Grafik Laporan
-                </div>
+                <div class="span-title">Grafik Laporan</div>
                 <div class="span-mode"></div>
-            </div> 
+            </div>
 
-
-            {{-- <div id="collapseOne" class="collapse" aria-labelledby="headingOne" data-parent="#accordion">
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-12 mb-4">
-                            <div class="card card-round">
-                                <div class="card-body">
-                                    <div class="card-title fw-mediumbold">Anggaran vs Realisasi per Tahun</div>
-                                    <div class="card-list"style="height: 500px;">
-                                        <livewire:livewire-column-chart :column-chart-model="$columnChartModel" wire:poll.5000ms />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-md-6 mb-4">
-                            <div class="card card-round">
-                                <div class="card-body">
-                                    <div class="card-title fw-mediumbold">Trend Realisasi Bulanan</div>
-                                    <div class="card-list" style="height: 500px;">
-                                        <livewire:livewire-line-chart :line-chart-model="$lineChartModel" wire:poll.5000ms />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-md-6">
-                            <div class="card card-round">
-                                <div class="card-body">
-                                    <div class="card-title fw-mediumbold">Alokasi Anggaran per SKPD</div>
-                                    <div class="card-list" style="height: 500px;">
-                                        <livewire:livewire-pie-chart :pie-chart-model="$pieChartModel" wire:poll.5000ms />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="card card-round">
-                                <div class="card-body">
-                                    <div class="card-title fw-mediumbold">Alokasi Anggaran per Tahun</div>
-                                    <div class="card-list" style="height: 500px;">
-                                        <livewire:livewire-pie-chart :pie-chart-model="$pieChartModel1" wire:poll.5000ms />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div> --}}
+            {{--
+        <div id="collapseOne" class="collapse" aria-labelledby="headingOne" data-parent="#accordion">
+        <div class="card-body">
+        <div class="row">
+        <div class="col-md-12 mb-4">
+        <div class="card card-round">
+        <div class="card-body">
+        <div class="card-title fw-mediumbold">Anggaran vs Realisasi per Tahun</div>
+        <div class="card-list"style="height: 500px;">
+        <livewire:livewire-column-chart :column-chart-model="$columnChartModel" wire:poll.5000ms />
         </div>
-        {{-- <div class="card">
-            <div class="card-header collapsed" id="headingTwo" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
-                <div class="span-title">
-                    Tabel Laporan
-                </div>
+        </div>
+        </div>
+        </div>
+        
+        <div class="col-md-6 mb-4">
+        <div class="card card-round">
+        <div class="card-body">
+        <div class="card-title fw-mediumbold">Trend Realisasi Bulanan</div>
+        <div class="card-list" style="height: 500px;">
+        <livewire:livewire-line-chart :line-chart-model="$lineChartModel" wire:poll.5000ms />
+        </div>
+        </div>
+        </div>
+        </div>
+        
+        <div class="col-md-6">
+        <div class="card card-round">
+        <div class="card-body">
+        <div class="card-title fw-mediumbold">Alokasi Anggaran per SKPD</div>
+        <div class="card-list" style="height: 500px;">
+        <livewire:livewire-pie-chart :pie-chart-model="$pieChartModel" wire:poll.5000ms />
+        </div>
+        </div>
+        </div>
+        </div>
+        <div class="col-md-6">
+        <div class="card card-round">
+        <div class="card-body">
+        <div class="card-title fw-mediumbold">Alokasi Anggaran per Tahun</div>
+        <div class="card-list" style="height: 500px;">
+        <livewire:livewire-pie-chart :pie-chart-model="$pieChartModel1" wire:poll.5000ms />
+        </div>
+        </div>
+        </div>
+        </div>
+        </div>
+        </div>
+        </div>
+      --}}
+        </div>
+        <div class="card">
+            <!-- <div class="card-header collapsed" id="headingTwo" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo"> -->
+            <div class="card-header">
+                <div class="span-title">Tabel Laporan</div>
                 <div class="span-mode"></div>
             </div>
-            <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordion">
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>SKPD</th>
-                                    <th>Kegiatan</th>
-                                    <th>Akun</th>
-                                    <th>Nilai Anggaran</th>
-                                    <th>Nilai Realisasi</th>
-                                    <th>Tahun</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-
-                                <tr class="table-info">
-                                    <td colspan="4">Total</td>
-                                    <td>Rp {{ number_format($realisasi->sum(fn($item) => $item->anggaran->rawNilaiAnggaran), 0, ',', '.') }}</td>
-                                    <td>Rp {{ number_format($realisasi->sum(fn($item) => $item->rawNilaiRealisasi), 0, ',', '.') }}</td>
-                                    <td></td>
-                                </tr>
-                                @foreach($anggaran as $item)
-                                <tr>
-                                    <td>{{ $loop->iteration }}</td>
-                                    <td>[{{ $item->anggaran->subKegiatan->kegiatan->program->subSkpd->skpd->kode }}] {{ $item->anggaran->subKegiatan->kegiatan->program->subSkpd->skpd->nama }}</td>
-                                    <td>[{{ $item->anggaran->subKegiatan->kegiatan->kode }}] {{ $item->anggaran->subKegiatan->kegiatan->nama }}</td>
-                                    <td>[{{ $item->anggaran->subRincianObyekAkun->kode }}] {{ $item->anggaran->subRincianObyekAkun->nama }}</td>
-                                    <td>{{ $item->anggaran->nilai_anggaran }}</td>
-                                    <td>{{ $item->nilai_realisasi }}</td>
-                                    <td>{{ $item->tahun }}</td>
-                                </tr>
-                                @endforeach
-
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div class="mt-3">
-                        {{ $anggaran->links() }}
-                    </div>
+            <!-- </div> -->
+            <!-- <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordion"> -->
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>SKPD</th>
+                                <th>Kegiatan</th>
+                                <th>Akun</th>
+                                <th>Nilai Anggaran</th>
+                                <th>Nilai Realisasi</th>
+                                <th>Tahun</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if ($realisasiAda)
+                            <tr class="table-info">
+                                <td colspan="4">Total</td>
+                                <td>Rp {{ number_format($realisasi->sum(fn ($item) => $item->anggaran->rawNilaiAnggaran), 0, ",", ".") }}</td>
+                                <td>Rp {{ number_format($realisasi->sum(fn ($item) => $item->rawNilaiRealisasi), 0, ",", ".") }}</td>
+                                <td></td>
+                            </tr>
+                            @foreach ($realisasi as $item)
+                            <tr>
+                                <td>{{ $loop->iteration }}</td>
+                                <td>
+                                    [{{ $item->anggaran->subKegiatan->kegiatan->program->subSkpd->skpd->kode }}] {{ $item->anggaran->subKegiatan->kegiatan->program->subSkpd->skpd->nama }}
+                                </td>
+                                <td>[{{ $item->anggaran->subKegiatan->kegiatan->kode }}] {{ $item->anggaran->subKegiatan->kegiatan->nama }}</td>
+                                <td>[{{ $item->anggaran->subRincianObyekAkun->kode }}] {{ $item->anggaran->subRincianObyekAkun->nama }}</td>
+                                <td>{{ $item->anggaran->nilai_anggaran }}</td>
+                                <td>{{ $item->nilai_realisasi }}</td>
+                                <td>{{ $item->tahun }}</td>
+                            </tr>
+                            @endforeach
+                            @else
+                            <tr>
+                                <td colspan="7">Tidak ada data yang tersedia.</td>
+                            </tr>
+                            @endif
+                        </tbody>
+                    </table>
                 </div>
-            </div>
-        </div> --}}
-    </div>
 
+            </div>
+        </div>
+    </div>
 </div>

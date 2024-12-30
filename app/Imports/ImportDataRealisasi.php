@@ -23,6 +23,41 @@ class ImportDataRealisasi implements ToCollection, WithHeadingRow, WithChunkRead
                 // if ($row->contains('#N/A')) {
                 //     continue;
                 // }
+                // kode yang kosong isi dengan #N/A
+                $fields = [
+                    'kode_urusan',
+                    'nama_urusan',
+                    'kode_urusan_pelaksana',
+                    'nama_urusan_pelaksana',
+                    'kode_skpd',
+                    'nama_skpd',
+                    'kode_sub_skpd',
+                    'nama_sub_skpd',
+                    'kode_program',
+                    'nama_program',
+                    'kode_kegiatan',
+                    'nama_kegiatan',
+                    'kode_sub_kegiatan',
+                    'nama_sub_kegiatan',
+                    'kode_akun',
+                    'nama_akun',
+                    'kode_akun_kelompok',
+                    'nama_akun_kelompok',
+                    'kode_akun_jenis',
+                    'nama_akun_jenis',
+                    'kode_akun_obyek',
+                    'nama_akun_obyek',
+                    'kode_akun_rincian_obyek',
+                    'nama_akun_rincian_obyek',
+                    'kode_akun_sub_rincian_obyek',
+                    'nama_akun_sub_rincian_obyek',
+                ];
+
+                foreach ($fields as $field) {
+                    if (empty($row[$field])) {
+                        $row[$field] = '#N/A';
+                    }
+                }
 
                 $kode = $row['kode_urusan'] . '.' . $row['kode_urusan_pelaksana'] . '.' . $row['kode_skpd'] . '.' . $row['kode_sub_skpd'] . '.' . $row['kode_program'] . '.' . $row['kode_kegiatan'] . '.' . $row['kode_sub_kegiatan'] . '.' . $row['kode_akun'] . '.' . $row['kode_akun_kelompok'] . '.' . $row['kode_akun_jenis'] . '.' . $row['kode_akun_obyek'] . '.' . $row['kode_akun_rincian_obyek'] . '.' . $row['kode_akun_sub_rincian_obyek'];
 

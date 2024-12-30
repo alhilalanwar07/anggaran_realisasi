@@ -4,12 +4,11 @@ namespace App\Exports;
 
 use App\Models\Realisasi;
 use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
-use Maatwebsite\Excel\Concerns\ShouldAutoSize;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class ExportDataRealisasi implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize
+class ExportDataLaporan implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize
 {
     protected $tahun;
 
@@ -117,7 +116,6 @@ class ExportDataRealisasi implements FromCollection, WithHeadings, WithMapping, 
             'Nama Rincian Obyek Akun',
             'Kode Sub Rincian Obyek Akun',
             'Nama Sub Rincian Obyek Akun',
-            'Nilai Anggaran',
             'Nilai Realisasi',
         ];
     }
