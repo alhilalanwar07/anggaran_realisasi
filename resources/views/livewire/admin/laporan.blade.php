@@ -66,8 +66,16 @@ new class extends Component {
         $labels = [],
         $data = []; // untuk chart
 
+    
+    public $label_chart_tahunan = [];
+    public $data_chart_realisasi_tahunan = [];
+    public $data_chart_anggaran_tahunan = [];
+    public $colors_chart_tahunan = [];
+
+
     public function with(): array
     {
+        $chartData = $this->chartPerTahun();
         return [
             "urusanPelaksana" => $this->getDataUrusanPelaksana($this->urusan_id),
             "skpd" => $this->getDataSkpd($this->urusan_pelaksana_id),
@@ -82,6 +90,10 @@ new class extends Component {
             "subRincianObyekAkun" => $this->getDataSubRincianObyekAkun($this->rincian_obyek_akun_id),
             // 'tahun' => $this->getDataTahun(),
             // 'realisasi' => $this->getDataRealisasi(),
+            'label_chart_tahunan' => $chartData['label_chart_tahunan'],
+            'data_chart_realisasi_tahunan' => $chartData['data_chart_realisasi_tahunan'],
+            'data_chart_anggaran_tahunan' => $chartData['data_chart_anggaran_tahunan'],
+            'colors_chart_tahunan' => $chartData['colors_chart_tahunan'],
         ];
     }
 
@@ -89,7 +101,7 @@ new class extends Component {
     {
         $colors = [];
         for ($i = 0; $i < $count; $i++) {
-            $colors[] = "#" . substr(str_shuffle("ABCDEF0123456789"), 0, 6);
+            $colors[] = sprintf('#%06X', mt_rand(0, 0xFFFFFF));
         }
         return $colors;
     }
@@ -398,60 +410,60 @@ new class extends Component {
             $grouped = $this->realisasi->groupBy('anggaran.subKegiatan.kegiatan.program.subSkpd.skpd.urusanPelaksana.urusan.nama');
             $this->labels = $grouped->keys();
             $this->data = $grouped->map(function ($group) {
-            return $group->sum('rawNilaiRealisasi');
+                return $group->sum('rawNilaiRealisasi');
             })->values();
             $this->colors = $this->randomColors($grouped->count());
-        }elseif ($this->urusan_id && $this->urusan_pelaksana_id && !$this->skpd_id && !$this->sub_skpd_id && !$this->program_id && !$this->kegiatan_id && !$this->sub_kegiatan_id) {
+        } elseif ($this->urusan_id && $this->urusan_pelaksana_id && !$this->skpd_id && !$this->sub_skpd_id && !$this->program_id && !$this->kegiatan_id && !$this->sub_kegiatan_id) {
             $grouped = $this->realisasi->groupBy('anggaran.subKegiatan.kegiatan.program.subSkpd.skpd.nama');
             $this->labels = $grouped->keys();
             $this->data = $grouped->map(function ($group) {
-            return $group->sum('rawNilaiRealisasi');
+                return $group->sum('rawNilaiRealisasi');
             })->values();
             $this->colors = $this->randomColors($grouped->count());
-        }elseif ($this->urusan_id && $this->urusan_pelaksana_id && $this->skpd_id && !$this->sub_skpd_id && !$this->program_id && !$this->kegiatan_id && !$this->sub_kegiatan_id) {
+        } elseif ($this->urusan_id && $this->urusan_pelaksana_id && $this->skpd_id && !$this->sub_skpd_id && !$this->program_id && !$this->kegiatan_id && !$this->sub_kegiatan_id) {
             $grouped = $this->realisasi->groupBy('anggaran.subKegiatan.kegiatan.program.subSkpd.nama');
             $this->labels = $grouped->keys();
             $this->data = $grouped->map(function ($group) {
-            return $group->sum('rawNilaiRealisasi');
+                return $group->sum('rawNilaiRealisasi');
             })->values();
             $this->colors = $this->randomColors($grouped->count());
-        }elseif ($this->urusan_id && $this->urusan_pelaksana_id && $this->skpd_id && $this->sub_skpd_id && !$this->program_id && !$this->kegiatan_id && !$this->sub_kegiatan_id) {
+        } elseif ($this->urusan_id && $this->urusan_pelaksana_id && $this->skpd_id && $this->sub_skpd_id && !$this->program_id && !$this->kegiatan_id && !$this->sub_kegiatan_id) {
             $grouped = $this->realisasi->groupBy('anggaran.subKegiatan.kegiatan.program.nama');
             $this->labels = $grouped->keys();
             $this->data = $grouped->map(function ($group) {
-            return $group->sum('rawNilaiRealisasi');
+                return $group->sum('rawNilaiRealisasi');
             })->values();
             $this->colors = $this->randomColors($grouped->count());
-        }elseif ($this->urusan_id && $this->urusan_pelaksana_id && $this->skpd_id && $this->sub_skpd_id && $this->program_id && !$this->kegiatan_id && !$this->sub_kegiatan_id) {
+        } elseif ($this->urusan_id && $this->urusan_pelaksana_id && $this->skpd_id && $this->sub_skpd_id && $this->program_id && !$this->kegiatan_id && !$this->sub_kegiatan_id) {
             $grouped = $this->realisasi->groupBy('anggaran.subKegiatan.kegiatan.nama');
             $this->labels = $grouped->keys();
             $this->data = $grouped->map(function ($group) {
-            return $group->sum('rawNilaiRealisasi');
+                return $group->sum('rawNilaiRealisasi');
             })->values();
             $this->colors = $this->randomColors($grouped->count());
-        }elseif ($this->urusan_id && $this->urusan_pelaksana_id && $this->skpd_id && $this->sub_skpd_id && $this->program_id && $this->kegiatan_id && !$this->sub_kegiatan_id) {
+        } elseif ($this->urusan_id && $this->urusan_pelaksana_id && $this->skpd_id && $this->sub_skpd_id && $this->program_id && $this->kegiatan_id && !$this->sub_kegiatan_id) {
             $grouped = $this->realisasi->groupBy('anggaran.subKegiatan.nama');
             $this->labels = $grouped->keys();
             $this->data = $grouped->map(function ($group) {
-            return $group->sum('rawNilaiRealisasi');
+                return $group->sum('rawNilaiRealisasi');
             })->values();
             $this->colors = $this->randomColors($grouped->count());
-        }elseif ($this->urusan_id && $this->urusan_pelaksana_id && $this->skpd_id && $this->sub_skpd_id && $this->program_id && $this->kegiatan_id && $this->sub_kegiatan_id) {
+        } elseif ($this->urusan_id && $this->urusan_pelaksana_id && $this->skpd_id && $this->sub_skpd_id && $this->program_id && $this->kegiatan_id && $this->sub_kegiatan_id) {
             $grouped = $this->realisasi->groupBy('anggaran.subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun.akun.nama');
             $this->labels = $grouped->keys();
             $this->data = $grouped->map(function ($group) {
-            return $group->sum('rawNilaiRealisasi');
+                return $group->sum('rawNilaiRealisasi');
             })->values();
             $this->colors = $this->randomColors($grouped->count());
-        }elseif(!$this->urusan_id){
+        } elseif (!$this->urusan_id) {
             $grouped = $this->realisasi->groupBy('anggaran.subKegiatan.kegiatan.program.subSkpd.skpd.urusanPelaksana.urusan.nama');
             $this->labels = $grouped->keys();
             $this->data =  $grouped->map(function ($group) {
                 return $group->sum('rawNilaiRealisasi');
-                })->values();
+            })->values();
             $this->colors = $this->randomColors($grouped->count());
         }
-        
+
 
         // $this->labels = $this->realisasi->pluck('anggaran.subKegiatan.kegiatan.program.subSkpd.skpd.nama');
         // $this->data = $this->realisasi->pluck('rawNilaiRealisasi');
@@ -468,6 +480,29 @@ new class extends Component {
     {
         // refresh page
         return redirect('/laporan');
+    }
+
+
+    // chart anggaran realisasi di group berdasarkan tahun (label = tahun, data = nilai realisasi dan anggaran per tahun) data tidak diambil dari fungsi getDataRealisasi()
+    public function chartPerTahun()
+    {
+        $realisasi = Realisasi::with('anggaran')
+        ->selectRaw('realisasis.tahun, sum(realisasis.nilai_realisasi) as total_realisasi, sum(anggarans.nilai_anggaran) as total_anggaran')
+        ->join('anggarans', 'realisasis.anggaran_id', '=', 'anggarans.id')
+        ->groupBy('realisasis.tahun')
+        ->get();
+
+        $this->label_chart_tahunan = $realisasi->pluck('tahun');
+        $this->data_chart_realisasi_tahunan = $realisasi->pluck('total_realisasi');
+        $this->data_chart_anggaran_tahunan = $realisasi->pluck('total_anggaran');
+        $this->colors_chart_tahunan = $this->randomColors($realisasi->count());
+
+        return [
+            'label_chart_tahunan' => $this->label_chart_tahunan,
+            'data_chart_realisasi_tahunan' => $this->data_chart_realisasi_tahunan,
+            'data_chart_anggaran_tahunan' => $this->data_chart_anggaran_tahunan,
+            'colors_chart_tahunan' => $this->colors_chart_tahunan,
+        ];
     }
 }; ?>
 
@@ -731,17 +766,35 @@ new class extends Component {
     </div>
 
     <div class="card">
+        <div class="card-body" wire:ignore>
+            <canvas id="chartRealisasiBaru" style="max-height: 500px !important;"></canvas>
+        </div>
+    </div>
+    <div class="card">
         <div class="card-header" id="headingOne" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
             <div class="span-title">Grafik Laporan</div>
             <div class="span-mode"></div>
         </div>
 
         <div class="card-body" wire:poll.5s>
-            <div class="chart-container text-center" wire:ignore>
+            <div class="chart-container text-center">
                 @if ($grafikAda == true)
-                    <h3 class="text-center badge bg-primary">REALISASI</h3>
+                <h3 class="text-center badge bg-primary">REALISASI</h3>
                 @endif
-                <canvas id="chartRealisasi" style="max-height: 500px !important;"></canvas>
+                <canvas wire:ignore id="chartRealisasi" style="max-height: 500px !important;"></canvas>
+                <!-- warna daan labels -->
+                <div class="row mt-3">
+                    @if ($grafikAda == true)
+                    @foreach ($labels as $label)
+                    <div class="col-md-12">
+                        <div class="d-flex align-items-center">
+                            <div class="me-2" style="width: 20px; height: 20px; background-color: {{ $colors[$loop->index] }};"></div>
+                            <div>{{ $label }}: {{ $data[$loop->index] }}</div> <br>
+                        </div>
+                    </div>
+                    @endforeach
+                    @endif
+                </div>
             </div>
         </div>
     </div>
@@ -898,6 +951,132 @@ new class extends Component {
 
 
         });
+
+
+        let chartRealisasiBaru = null;
+
+    document.addEventListener('livewire:init', function() {
+        function renderChartBaru(labels, dataRealisasi, dataAnggaran, colors) {
+            const ctx = document.getElementById('chartRealisasiBaru').getContext('2d');
+
+            if (!labels || !dataRealisasi || !dataAnggaran || !colors || labels.length === 0 || dataRealisasi.length === 0 || dataAnggaran.length === 0 || colors.length === 0) {
+                console.error("Data chart tidak valid:", {
+                    labels,
+                    dataRealisasi,
+                    dataAnggaran,
+                    colors
+                });
+                return;
+            }
+
+            if (chartRealisasiBaru) {
+                chartRealisasiBaru.data.labels = labels;
+                chartRealisasiBaru.data.datasets[0].data = dataRealisasi;
+                chartRealisasiBaru.data.datasets[1].data = dataAnggaran;
+                chartRealisasiBaru.data.datasets[0].backgroundColor = colors.slice(0, dataRealisasi.length);
+                chartRealisasiBaru.data.datasets[1].backgroundColor = colors.slice(0, dataAnggaran.length).map(color => color.replace('1)', '0.8'));
+                chartRealisasiBaru.update();
+            } else {
+                // fungsi color random
+                function randomColor() {
+                    return `rgba(${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)}, 1)`;
+                }
+                // Jika chart belum ada, buat chart baru
+                chartRealisasiBaru = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Nilai Realisasi',
+                                data: dataRealisasi,
+                                backgroundColor: randomColor(), // Warna berbeda untuk nilai realisasi
+                                borderColor: randomColor(),
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'Nilai Anggaran',
+                                data: dataAnggaran,
+                                backgroundColor: randomColor(), // Warna berbeda untuk nilai anggaran
+                                borderColor: randomColor(),
+                                borderWidth: 1
+                            }
+                        ]
+                    },
+                    options: {
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    font: {
+                                        size: 12, // Custom font size
+                                        weight: 'bold' // Custom font weight
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                titleFont: {
+                                    size: 14
+                                },
+                                bodyFont: {
+                                    size: 12
+                                }
+                            }
+                        },
+                        responsive: true,
+                        scales: {
+                            y: {
+                                ticks: {
+                                    font: {
+                                        size: 12,
+                                        weight: 'bold'
+                                    }
+                                },
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Nominal',
+                                    font: {
+                                        size: 12,
+                                        weight: 'bold'
+                                    }
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    font: {
+                                        size: 12,
+                                        weight: 'bold'
+                                    }
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Tahun',
+                                    font: {
+                                        size: 14,
+                                        weight: 'bold'
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // Mendengarkan event Livewire untuk update data chart baru
+        Livewire.on('tampilkanGrafikBaru', (event) => {
+            const { labels, dataRealisasi, dataAnggaran, colors } = event.detail;
+            renderChartBaru(labels, dataRealisasi, dataAnggaran, colors);
+        });
+
+        // Inisialisasi pertama kali dengan data awal
+        const initialLabels = @json($label_chart_tahunan);
+        const initialDataRealisasi = @json($data_chart_realisasi_tahunan);
+        const initialDataAnggaran = @json($data_chart_anggaran_tahunan);
+        const initialColors = @json($colors_chart_tahunan);
+
+        renderChartBaru(initialLabels, initialDataRealisasi, initialDataAnggaran, initialColors);
+    });
 
 
         document.addEventListener('livewire:init', function() {
