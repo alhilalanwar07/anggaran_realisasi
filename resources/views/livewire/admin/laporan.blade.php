@@ -988,19 +988,20 @@ new class extends Component {
                         labels: labels,
                         datasets: [
                             {
+                                label: 'Nilai Anggaran',
+                                data: dataAnggaran,
+                                backgroundColor: randomColor(), // Warna berbeda untuk nilai anggaran
+                                borderColor: randomColor(),
+                                borderWidth: 1
+                            },
+                            {
                                 label: 'Nilai Realisasi',
                                 data: dataRealisasi,
                                 backgroundColor: randomColor(), // Warna berbeda untuk nilai realisasi
                                 borderColor: randomColor(),
                                 borderWidth: 1
                             },
-                            {
-                                label: 'Nilai Anggaran',
-                                data: dataAnggaran,
-                                backgroundColor: randomColor(), // Warna berbeda untuk nilai anggaran
-                                borderColor: randomColor(),
-                                borderWidth: 1
-                            }
+                            
                         ]
                     },
                     options: {
