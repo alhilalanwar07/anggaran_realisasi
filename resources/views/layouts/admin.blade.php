@@ -17,6 +17,7 @@
     <link rel="stylesheet" href="{{ url('/') }}/assets/css/bootstrap.min.css" />
     <link rel="stylesheet" href="{{ url('/') }}/assets/css/plugins.min.css" />
     <link rel="stylesheet" href="{{ url('/') }}/assets/css/kaiadmin.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     @livewireStyles
 </head>
 <body>
@@ -96,6 +97,7 @@
 
     <!-- Kaiadmin JS -->
     <script src="{{ url('/') }}/assets/js/kaiadmin.min.js" data-navigate-track></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" data-navigate-track></script>
 
 
 

@@ -321,21 +321,21 @@ new class extends Component {
             $realisasi = Realisasi::all();
         }
 
-        $realisasi = $query->get();
+        $realisasi = $query;
 
         // Set anggaran_id to #N/A for records with null anggaran_id
-        foreach ($realisasi as $item) {
-            if (is_null($item->anggaran_id)) {
-                $item->anggaran_id = "#N/A";
-            }
-        }
+        // foreach ($realisasi as $item) {
+        //     if (is_null($item->anggaran_id)) {
+        //         $item->anggaran_id = "#N/A";
+        //     }
+        // }
 
         return $realisasi;
     }
 
     public function tampilkanRealisasi()
     {
-        $this->realisasi = $this->getDataRealisasi();
+        $this->realisasi = $this->getDataRealisasi()->get();
 
         if ($this->realisasi->isEmpty()) {
             $this->dispatch('tambahAlertToast', detail: [
@@ -355,7 +355,7 @@ new class extends Component {
     public function downloadExcel()
     {
         // bedasarkan get data realisasi
-        $this->realisasi = $this->getDataRealisasi();
+        $this->realisasi = $this->getDataRealisasi()->get();
 
         // validasi jika tidak ada data
         try {
@@ -376,6 +376,92 @@ new class extends Component {
                 'message' => 'Terjadi kesalahan saat mengunduh file: ' . $e->getMessage(),
             ]);
         }
+    }
+
+    public function tampilkanGrafik()
+    {
+        $this->realisasi = $this->getDataRealisasi()->get();
+
+        if ($this->realisasi->isEmpty()) {
+            $this->dispatch('tambahAlertToast', detail: [
+                'type' => 'warning',
+                'title' => 'Data Kosong',
+                'message' => 'Harap pilih kembali data yang akan ditampilkan',
+            ]);
+            return;
+        }
+
+        $this->grafikAda = true;
+
+        // ketika memilih hanya urusan_id
+        if ($this->urusan_id && !$this->urusan_pelaksana_id && !$this->skpd_id && !$this->sub_skpd_id && !$this->program_id && !$this->kegiatan_id && !$this->sub_kegiatan_id) {
+            $grouped = $this->realisasi->groupBy('anggaran.subKegiatan.kegiatan.program.subSkpd.skpd.urusanPelaksana.urusan.nama');
+            $this->labels = $grouped->keys();
+            $this->data = $grouped->map(function ($group) {
+            return $group->sum('rawNilaiRealisasi');
+            })->values();
+            $this->colors = $this->randomColors($grouped->count());
+        }elseif ($this->urusan_id && $this->urusan_pelaksana_id && !$this->skpd_id && !$this->sub_skpd_id && !$this->program_id && !$this->kegiatan_id && !$this->sub_kegiatan_id) {
+            $grouped = $this->realisasi->groupBy('anggaran.subKegiatan.kegiatan.program.subSkpd.skpd.nama');
+            $this->labels = $grouped->keys();
+            $this->data = $grouped->map(function ($group) {
+            return $group->sum('rawNilaiRealisasi');
+            })->values();
+            $this->colors = $this->randomColors($grouped->count());
+        }elseif ($this->urusan_id && $this->urusan_pelaksana_id && $this->skpd_id && !$this->sub_skpd_id && !$this->program_id && !$this->kegiatan_id && !$this->sub_kegiatan_id) {
+            $grouped = $this->realisasi->groupBy('anggaran.subKegiatan.kegiatan.program.subSkpd.nama');
+            $this->labels = $grouped->keys();
+            $this->data = $grouped->map(function ($group) {
+            return $group->sum('rawNilaiRealisasi');
+            })->values();
+            $this->colors = $this->randomColors($grouped->count());
+        }elseif ($this->urusan_id && $this->urusan_pelaksana_id && $this->skpd_id && $this->sub_skpd_id && !$this->program_id && !$this->kegiatan_id && !$this->sub_kegiatan_id) {
+            $grouped = $this->realisasi->groupBy('anggaran.subKegiatan.kegiatan.program.nama');
+            $this->labels = $grouped->keys();
+            $this->data = $grouped->map(function ($group) {
+            return $group->sum('rawNilaiRealisasi');
+            })->values();
+            $this->colors = $this->randomColors($grouped->count());
+        }elseif ($this->urusan_id && $this->urusan_pelaksana_id && $this->skpd_id && $this->sub_skpd_id && $this->program_id && !$this->kegiatan_id && !$this->sub_kegiatan_id) {
+            $grouped = $this->realisasi->groupBy('anggaran.subKegiatan.kegiatan.nama');
+            $this->labels = $grouped->keys();
+            $this->data = $grouped->map(function ($group) {
+            return $group->sum('rawNilaiRealisasi');
+            })->values();
+            $this->colors = $this->randomColors($grouped->count());
+        }elseif ($this->urusan_id && $this->urusan_pelaksana_id && $this->skpd_id && $this->sub_skpd_id && $this->program_id && $this->kegiatan_id && !$this->sub_kegiatan_id) {
+            $grouped = $this->realisasi->groupBy('anggaran.subKegiatan.nama');
+            $this->labels = $grouped->keys();
+            $this->data = $grouped->map(function ($group) {
+            return $group->sum('rawNilaiRealisasi');
+            })->values();
+            $this->colors = $this->randomColors($grouped->count());
+        }elseif ($this->urusan_id && $this->urusan_pelaksana_id && $this->skpd_id && $this->sub_skpd_id && $this->program_id && $this->kegiatan_id && $this->sub_kegiatan_id) {
+            $grouped = $this->realisasi->groupBy('anggaran.subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun.akun.nama');
+            $this->labels = $grouped->keys();
+            $this->data = $grouped->map(function ($group) {
+            return $group->sum('rawNilaiRealisasi');
+            })->values();
+            $this->colors = $this->randomColors($grouped->count());
+        }elseif(!$this->urusan_id){
+            $grouped = $this->realisasi->groupBy('anggaran.subKegiatan.kegiatan.program.subSkpd.skpd.urusanPelaksana.urusan.nama');
+            $this->labels = $grouped->keys();
+            $this->data =  $grouped->map(function ($group) {
+                return $group->sum('rawNilaiRealisasi');
+                })->values();
+            $this->colors = $this->randomColors($grouped->count());
+        }
+        
+
+        // $this->labels = $this->realisasi->pluck('anggaran.subKegiatan.kegiatan.program.subSkpd.skpd.nama');
+        // $this->data = $this->realisasi->pluck('rawNilaiRealisasi');
+        // $this->colors = $this->randomColors($this->realisasi->count());
+
+        $this->dispatch('tampilkanGrafik', [
+            'labels' => $this->labels,
+            'data' => $this->data,
+            'colors' => $this->colors,
+        ]);
     }
 
     public function reload()
@@ -644,65 +730,21 @@ new class extends Component {
         </div>
     </div>
 
-    @if ($grafikAda)
     <div class="card">
         <div class="card-header" id="headingOne" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
             <div class="span-title">Grafik Laporan</div>
             <div class="span-mode"></div>
         </div>
 
-        {{--
-        <div id="collapseOne" class="collapse" aria-labelledby="headingOne" data-parent="#accordion">
-        <div class="card-body">
-        <div class="row">
-        <div class="col-md-12 mb-4">
-        <div class="card card-round">
-        <div class="card-body">
-        <div class="card-title fw-mediumbold">Anggaran vs Realisasi per Tahun</div>
-        <div class="card-list"style="height: 500px;">
-        <livewire:livewire-column-chart :column-chart-model="$columnChartModel" wire:poll.5000ms />
+        <div class="card-body" wire:poll.5s>
+            <div class="chart-container text-center" wire:ignore>
+                @if ($grafikAda == true)
+                    <h3 class="text-center badge bg-primary">REALISASI</h3>
+                @endif
+                <canvas id="chartRealisasi" style="max-height: 500px !important;"></canvas>
+            </div>
         </div>
-        </div>
-        </div>
-        </div>
-        
-        <div class="col-md-6 mb-4">
-        <div class="card card-round">
-        <div class="card-body">
-        <div class="card-title fw-mediumbold">Trend Realisasi Bulanan</div>
-        <div class="card-list" style="height: 500px;">
-        <livewire:livewire-line-chart :line-chart-model="$lineChartModel" wire:poll.5000ms />
-        </div>
-        </div>
-        </div>
-        </div>
-        
-        <div class="col-md-6">
-        <div class="card card-round">
-        <div class="card-body">
-        <div class="card-title fw-mediumbold">Alokasi Anggaran per SKPD</div>
-        <div class="card-list" style="height: 500px;">
-        <livewire:livewire-pie-chart :pie-chart-model="$pieChartModel" wire:poll.5000ms />
-        </div>
-        </div>
-        </div>
-        </div>
-        <div class="col-md-6">
-        <div class="card card-round">
-        <div class="card-body">
-        <div class="card-title fw-mediumbold">Alokasi Anggaran per Tahun</div>
-        <div class="card-list" style="height: 500px;">
-        <livewire:livewire-pie-chart :pie-chart-model="$pieChartModel1" wire:poll.5000ms />
-        </div>
-        </div>
-        </div>
-        </div>
-        </div>
-        </div>
-        </div>
-      --}}
     </div>
-    @endif
     @if ($realisasiAda)
 
     <div class="card">
@@ -753,10 +795,114 @@ new class extends Component {
     @endif
 
 
+    @push('script')
     <script>
-        document.addEventListener('livewire:init', function () {
+        // grafik
+        let chartRealisasi = null;
+
+        document.addEventListener('livewire:init', function() {
+
+
+
+            // Fungsi untuk membuat atau memperbarui chart
+            function renderChart(labels, data, colors) {
+                const ctx = document.getElementById('chartRealisasi').getContext('2d');
+
+                if (!labels || !data || !colors || labels.length === 0 || data.length === 0 || colors.length === 0) {
+                    console.error("Data chart tidak valid:", {
+                        labels,
+                        data,
+                        colors
+                    });
+                    return;
+                }
+
+                if (chartRealisasi) {
+                    chartRealisasi.data.labels = labels;
+                    chartRealisasi.data.datasets[0].data = data;
+                    chartRealisasi.data.datasets[0].backgroundColor = colors.slice(0, data.length);
+                    chartRealisasi.data.datasets[0].borderColor = colors.slice(0, data.length).map(color => color.replace('1)', '0.8'));
+                    chartRealisasi.update();
+
+
+                } else {
+
+                    // Jika chart belum ada, buat chart baru
+                    chartRealisasi = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Nominal',
+                                data: data,
+                                backgroundColor: colors.slice(0, data.length),
+                                borderColor: colors.slice(0, data.length).map(color => color.replace('1)', '0.8')),
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        callback: function(value, index, values) {
+                                            return 'Rp ' + value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+                                        }
+                                    }
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    display: false
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+
+            // Mendengarkan event Livewire untuk update data chart
+            Livewire.on('tampilkanGrafik', function(response) {
+                if (!Array.isArray(response) || response.length === 0) {
+                    console.error("Response tidak valid:", response);
+                    return;
+                }
+
+                const dataObject = response[0]; // Ambil objek pertama dari array
+                const labels = dataObject.labels;
+                const chartData = dataObject.data.map(Number); // Pastikan data numerik
+                const colors = dataObject.colors;
+
+                console.log("Data chart diterima dari Livewire:", dataObject);
+
+                if (!labels || !chartData || !colors || labels.length === 0 || chartData.length === 0 || colors.length === 0) {
+                    console.error("Data chart tidak valid:", {
+                        labels,
+                        chartData,
+                        colors
+                    });
+                    return;
+                }
+
+                renderChart(labels, chartData, colors);
+            });
+
+            // Inisialisasi pertama kali dengan data awal
+            const initialLabels = @json($labels);
+            const initialData = @json($data);
+            const initialColors = @json($colors);
+
+            console.log(initialLabels, initialData, initialColors);
+
+            renderChart(initialLabels, initialData, initialColors);
+
+
+        });
+
+
+        document.addEventListener('livewire:init', function() {
             Livewire.on('fileDownloaded', () => {
-            window.location.reload();
+                window.location.reload();
             });
 
             Livewire.on('tambahAlertToast', (event) => {
@@ -782,27 +928,29 @@ new class extends Component {
                     timerProgressBar: true
                 });
 
-                setTimeout(function() { window.location.reload(); }, 2500);
+                setTimeout(function() {
+                    window.location.reload();
+                }, 2500);
             });
 
             Livewire.on('errorAlertToast', (event) => {
-            const data = event;
-            swal({
-                title: "Error",
-                text: "Terjadi kesalahan",
-                icon: "error",
-                buttons: {
-                confirm: {
-                    text: "Ok",
-                    value: true,
-                    visible: true,
-                    className: "btn btn-danger",
-                    closeModal: true
-                }
-                },
-                timer: 2000,
-                timerProgressBar: true
-            });
+                const data = event;
+                swal({
+                    title: "Error",
+                    text: "Terjadi kesalahan",
+                    icon: "error",
+                    buttons: {
+                        confirm: {
+                            text: "Ok",
+                            value: true,
+                            visible: true,
+                            className: "btn btn-danger",
+                            closeModal: true
+                        }
+                    },
+                    timer: 2000,
+                    timerProgressBar: true
+                });
             });
 
             Livewire.on("toast", (event) => {
@@ -810,4 +958,5 @@ new class extends Component {
             });
         });
     </script>
+    @endpush
 </div>

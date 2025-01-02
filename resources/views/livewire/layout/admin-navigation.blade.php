@@ -39,7 +39,7 @@ new class extends Component {
             <div class="sidebar-content">
                 <ul class="nav nav-secondary">
                     <li class="nav-item {{ Route::is('dashboard') ? 'active text-info' : '' }}">
-                        <a class="nav-link" href="{{ route('dashboard') }}" wire:navigate>
+                        <a class="nav-link" href="{{ route('dashboard') }}" >
                             <i class="fas fa-home"></i>
                             <p>Dashboard</p>
                         </a>
@@ -93,7 +93,7 @@ new class extends Component {
                         <h4 class="text-section">Output</h4>
                     </li>
                     <li class="nav-item {{ Route::is('laporan') ? 'active text-info' : '' }}">
-                        <a class="nav-link" href="{{ route('laporan') }}" wire:navigate>
+                        <a class="nav-link" href="{{ route('laporan') }}">
                             <i class="fas fa-print"></i>
                             <p>Laporan</p>
                         </a>

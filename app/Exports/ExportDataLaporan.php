@@ -25,6 +25,11 @@ class ExportDataLaporan implements FromCollection, WithHeadings, WithMapping, Sh
 
     public function map($realisasi): array
     {
+        // Set anggaran_id to #N/A for records with null anggaran_id
+        if (is_null($realisasi->anggaran_id)) {
+            $realisasi->anggaran_id = "#N/A";
+        }
+
         $kode_parts = $realisasi->anggaran === null ? explode('.', $realisasi->kode) : null;
         
         return [
