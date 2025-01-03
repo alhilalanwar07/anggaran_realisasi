@@ -766,6 +766,10 @@ new class extends Component {
     </div>
 
     <div class="card">
+    <div class="card-header" id="headingOne" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+            <div class="span-title">Grafik Anggaran & Realisasi Per Tahun</div>
+            <div class="span-mode"></div>
+        </div>
         <div class="card-body" wire:ignore>
             <canvas id="chartRealisasiBaru" style="max-height: 500px !important;"></canvas>
         </div>
@@ -783,16 +787,21 @@ new class extends Component {
                 @endif
                 <canvas wire:ignore id="chartRealisasi" style="max-height: 500px !important;"></canvas>
                 <!-- warna daan labels -->
-                <div class="row mt-3">
+                <div class="row mt-3 text-center">
                     @if ($grafikAda == true)
-                    @foreach ($labels as $label)
-                    <div class="col-md-12">
-                        <div class="d-flex align-items-center">
-                            <div class="me-2" style="width: 20px; height: 20px; background-color: {{ $colors[$loop->index] }};"></div>
-                            <div>{{ $label }}: {{ $data[$loop->index] }}</div> <br>
-                        </div>
+                    <div class="col-lg-8  col-md-12 mb-2">
+                        <table class="table table-striped table-hover">
+                            <tbody class="align-left">
+                                @foreach ($labels as $label)
+                                <tr class="align-left">
+                                    <td style="background-color: {{ $colors[$loop->index] }}; width: 20px;"></td>
+                                    <td class="text-wrap">{{ $label }}</td>
+                                    <td>Rp.{{ number_format($data[$loop->index], 0, ",", ".") }}</td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
                     </div>
-                    @endforeach
                     @endif
                 </div>
             </div>
@@ -908,7 +917,8 @@ new class extends Component {
                                 legend: {
                                     display: false
                                 }
-                            }
+                            },
+                            responsive: true,
                         }
                     });
                 }
@@ -1024,41 +1034,6 @@ new class extends Component {
                             }
                         },
                         responsive: true,
-                        scales: {
-                            y: {
-                                ticks: {
-                                    font: {
-                                        size: 12,
-                                        weight: 'bold'
-                                    }
-                                },
-                                beginAtZero: true,
-                                title: {
-                                    display: true,
-                                    text: 'Nominal',
-                                    font: {
-                                        size: 12,
-                                        weight: 'bold'
-                                    }
-                                }
-                            },
-                            x: {
-                                ticks: {
-                                    font: {
-                                        size: 12,
-                                        weight: 'bold'
-                                    }
-                                },
-                                title: {
-                                    display: true,
-                                    text: 'Tahun',
-                                    font: {
-                                        size: 14,
-                                        weight: 'bold'
-                                    }
-                                }
-                            }
-                        }
                     }
                 });
             }
