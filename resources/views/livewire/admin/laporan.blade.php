@@ -832,6 +832,24 @@ new class extends Component {
                 <canvas wire:ignore id="chartAkun" style="max-height: 500px !important;"></canvas>
                 <!-- warna daan labels -->
                 <div class="row mt-3 text-center">
+                    @if ($grafikAda == true)
+                    <div class="col-lg-12  col-md-12 mb-2">
+                        <table class="table table-striped table-hover">
+                            <tbody class="align-left">
+                                
+                                @foreach ($label_chart_akun as $label)
+                                <tr class="align-left">
+                                    <td style="background-color: {{ $colors_chart_realisasi_akun[$loop->index] }}; width: 20px;"></td>
+                                    <td class="text-wrap">{{ $label }}</td>
+                                    <td>Rp{{ number_format($data_chart_realisasi_akun[$loop->index], 0, ",", ".") }}</td>
+                                    <td style="background-color: {{ $colors_chart_anggaran_akun[$loop->index] }}; width: 20px;"></td>
+                                    <td>Rp{{ number_format($data_chart_anggaran_akun[$loop->index], 0, ",", ".") }}</td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                    @endif
                 </div>
             </div>
         </div>

@@ -220,6 +220,13 @@ new class extends Component {
         }
     }
 
+    // download file anggaran_excel_template.xlsx from storage
+    public function downloadTemplate()
+    {
+        $path = storage_path('app/public/realisasi_excel_template.xlsx');
+        return response()->download($path);
+    }
+
 }; ?>
 
 <div>
@@ -324,7 +331,7 @@ new class extends Component {
         </div>
     </div>
     <div class="modal fade" id="modalImport" tabindex="-1" wire:ignore.self data-bs-backdrop="static">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Import Data Realisasi</h5>
@@ -332,6 +339,14 @@ new class extends Component {
                 </div>
                 <form wire:submit.prevent="importExcel" enctype="multipart/form-data">
                     <div class="modal-body">
+                        <!-- petunjuk upload -->
+                        <div class="alert alert-info shadow-none bg-light" style="border: 2px dashed #17a2b8;">
+                            <h4 class="alert-heading text-undeline badge bg-dark text-light">Petunjuk Upload</h4>
+                            <p class="mb-0">1. Download  <a href="#" wire:click.prevent="downloadTemplate" class="text-underline"><u>Template Excel</u></a>
+                                <br> 2. Isi data sesuai dengan template excel yang telah di download
+                                <br> 3. Upload file excel yang telah di isi dibawah.
+                            </p>
+                        </div>
                         <div class="form-group mb-3">
                             <label for="file">File Excel</label>
                             <div x-data="{ uploading: false, progress: 0 }" x-on:livewire-upload-start="uploading = true" x-on:livewire-upload-finish="uploading = false" x-on:livewire-upload-cancel="uploading = false" x-on:livewire-upload-error="uploading = false" x-on:livewire-upload-progress="progress = $event.detail.progress">
