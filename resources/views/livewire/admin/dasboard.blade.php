@@ -13,33 +13,58 @@ use Illuminate\Support\Facades\DB;
 
 new class extends Component {
     public $filter = 'urusan';
+    public $tahun;
+
+    public function mount()
+    {
+        $this->tahun = date('Y');
+    }
 
     public function with(): array
     {
         $grafikData = $this->grafikData();
         $pendapatanData = $this->pendapatanData();
+        // dd($pendapatanData);
         $belanjaData = $this->belanjaData();
-        $semuaData = $this->semuaData($this->filter);
+        $semuaData = $this->semuaData($this->filter, $this->tahun);
         return [
-            'skpd' => Skpd::count(),
-            'unit_skpd' => SubSkpd::count(),
-            'program' => Program::count(),
-            'kegiatan' => Kegiatan::count(),
-            'sub_kegiatan' => SubKegiatan::count(),
-            'pendapatan' => Anggaran::sum('nilai_anggaran'),
-            'realisasi' => Realisasi::sum('nilai_realisasi'),
+            'skpd' => Skpd::groupBy('kode')->count(),
+            'unit_skpd' => SubSkpd::groupBy('kode')->count(),
+            'program' => Program::groupBy('kode')->count(),
+            'kegiatan' => Kegiatan::groupBy('kode')->count(),
+            'sub_kegiatan' => SubKegiatan::groupBy('kode')->count(),
+            'pendapatan' => Anggaran::where('tahun','like', $this->tahun)->whereHas('subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun', function ($query) {
+                $query->where('nama', 'like', '%pendapatan%');
+            })->sum('nilai_anggaran'),
+            'realisasi' => Realisasi::where('tahun','like', $this->tahun)->whereHas('anggaran.subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun', function ($query) {
+                $query->where('nama', 'like', '%belanja%');
+            })->sum('nilai_realisasi'),
+            'total_anggaran' => Anggaran::where('tahun','like', $this->tahun)->sum('nilai_anggaran'),
+            'total_realisasi' => Realisasi::where('tahun','like', $this->tahun)->sum('nilai_realisasi'),
             'grafikData' => $grafikData,
             'pendapatanData' => $pendapatanData,
             'belanjaData' => $belanjaData,
             'filter' => $this->filter,
-            'semuaData' => $semuaData
+            'semuaData' => $semuaData,
+            'tahun' => $this->tahun,
+            'total_pembiayaan' => Anggaran::where('tahun','like', $this->tahun)->whereHas('subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun', function ($query) {
+                $query->where('nama', 'like', '%pembiayaan%');
+            })->sum('nilai_anggaran'),
+            'total_penerimaan_pembiayaan' => Anggaran::where('tahun','like', $this->tahun)->whereHas('subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun', function ($query) {
+                $query->where('nama', 'like', '%penerimaan pembiayaan%');
+            })->sum('nilai_anggaran'),
+            'total_pengeluaran_pembiayaan' => Anggaran::where('tahun','like', $this->tahun)->whereHas('subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun', function ($query) {
+                $query->where('nama', 'like', '%pengeluaran pembiayaan%');
+            })->sum('nilai_anggaran'),
+            'total_pad' => Anggaran::where('tahun','like', $this->tahun)->whereHas('subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun', function ($query) {
+                $query->where('nama', 'like', '%pad%');
+            })->sum('nilai_anggaran'),
+
         ];
     }
 
     public function grafikData()
     {
-
-        // value dari total nilai anggaran dari tabel anggaran berdasarkan kelompok_akun_id, yang beralasi 'subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun',
         $anggaranData = Anggaran::with('subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun')
             ->select('kelompok_akuns.nama', DB::raw('SUM(nilai_anggaran) as total'))
             ->join('sub_rincian_obyek_akuns', 'anggarans.sub_rincian_obyek_akun_id', '=', 'sub_rincian_obyek_akuns.id')
@@ -47,6 +72,7 @@ new class extends Component {
             ->join('obyek_akuns', 'rincian_obyek_akuns.obyek_akun_id', '=', 'obyek_akuns.id')
             ->join('jenis_akuns', 'obyek_akuns.jenis_akun_id', '=', 'jenis_akuns.id')
             ->join('kelompok_akuns', 'jenis_akuns.kelompok_akun_id', '=', 'kelompok_akuns.id')
+            ->whereYear('anggarans.tahun', $this->tahun)
             ->groupBy('kelompok_akuns.nama', 'kelompok_akuns.id')
             ->get();
 
@@ -59,8 +85,6 @@ new class extends Component {
         ];
     }
 
-    // berdasarkan sumber dana
-    //pendapatan = where kelompok = "Pendapatan"
     public function pendapatanData()
     {
         $anggaranData = Anggaran::with('subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun')
@@ -71,8 +95,10 @@ new class extends Component {
             ->join('jenis_akuns', 'obyek_akuns.jenis_akun_id', '=', 'jenis_akuns.id')
             ->join('kelompok_akuns', 'jenis_akuns.kelompok_akun_id', '=', 'kelompok_akuns.id')
             ->where('kelompok_akuns.nama', 'like', '%pendapatan%')
+            ->where('anggarans.tahun', 'like', $this->tahun)
             ->groupBy('kelompok_akuns.nama', 'kelompok_akuns.id')
             ->get();
+        
 
         return [
             'labels' => $anggaranData->pluck('nama')->toArray(),
@@ -80,7 +106,6 @@ new class extends Component {
         ];
     }
 
-    //belanja = where kelompok = "Belanja"
     public function belanjaData()
     {
         $anggaranData = Anggaran::with('subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun')
@@ -91,6 +116,7 @@ new class extends Component {
             ->join('jenis_akuns', 'obyek_akuns.jenis_akun_id', '=', 'jenis_akuns.id')
             ->join('kelompok_akuns', 'jenis_akuns.kelompok_akun_id', '=', 'kelompok_akuns.id')
             ->where('kelompok_akuns.nama', 'like', '%belanja%')
+            ->whereYear('anggarans.tahun', $this->tahun)
             ->groupBy('kelompok_akuns.nama', 'kelompok_akuns.id')
             ->get();
 
@@ -111,7 +137,7 @@ new class extends Component {
         return $colors;
     }
 
-    public function semuaData($filter = 'urusan')
+    public function semuaData($filter = 'urusan', $tahun = 2023)
     {
         $query = Anggaran::with([
             'subKegiatan.kegiatan.program.subSkpd.skpd.urusanPelaksana.urusan',
@@ -120,7 +146,7 @@ new class extends Component {
 
         $query = $this->applyFilter($query, $filter);
 
-        $data = $query->get();
+        $data = $query->whereYear('anggarans.tahun', $tahun)->get();
 
         $this->labels = $data->pluck('nama')->toArray();
         $this->values = $data->pluck('total')->toArray();
@@ -230,7 +256,14 @@ new class extends Component {
 
     public function updatedFilter($value)
     {
-        $this->semuaData($value);
+        $this->filter = $value;
+        $this->semuaData($this->filter, $this->tahun);
+    }
+
+    public function updatedTahun($value)
+    {
+        $this->tahun = $value;
+        $this->semuaData($this->filter, $this->tahun);
     }
 }; ?>
 
@@ -273,17 +306,64 @@ new class extends Component {
                     <div class="me-2">
                         <i class="fas fa-calendar-alt"></i>
                     </div>
-                    <span class="fw-bold">Hari ini:</span>
+                    <span class="fw-bold">Tahun:</span>
                 </div>
                 <div class="ms-3">
-                    <span class="badge bg-primary">Rp {{ number_format($pendapatan, 0, ',', '.') }}</span>
+                    <select wire:model.live="tahun" class="form-select">
+                        @for ($i = 2021; $i <= date('Y'); $i++) 
+                            <option value="{{ $i }}">{{ $i }}</option>
+                        @endfor
+                    </select>
+
                 </div>
             </div>
         </div>
 
     </div>
     <div class="row">
-        <div class="col-sm-6 col-md-6">
+    <div class="col-sm-6 col-md-3">
+            <div class="card card-stats card-round">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-icon">
+                            <div class="icon-big text-center icon-success bubble-shadow-small">
+                                <i class="fas fa-luggage-cart"></i>
+                            </div>
+                        </div>
+                        <div class="col col-stats ms-3 ms-sm-0">
+                            <div class="numbers">
+                                <p class="card-category">Total Anggaran</p>
+                                <h4 class="card-title">
+                                    Rp {{ number_format($total_anggaran, 0, ',', '.') }}
+                                </h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-md-3">
+            <div class="card card-stats card-round">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-icon">
+                            <div class="icon-big text-center icon-secondary bubble-shadow-small">
+                                <i class="far fa-check-circle"></i>
+                            </div>
+                        </div>
+                        <div class="col col-stats ms-3 ms-sm-0">
+                            <div class="numbers">
+                                <p class="card-category">Total Realisasi</p>
+                                <h4 class="card-title">
+                                    Rp {{ number_format($total_realisasi, 0, ',', '.') }}
+                                </h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-md-3">
             <div class="card card-stats card-round">
                 <div class="card-body">
                     <div class="row align-items-center">
@@ -304,13 +384,13 @@ new class extends Component {
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-md-6">
+        <div class="col-sm-6 col-md-3">
             <div class="card card-stats card-round">
                 <div class="card-body">
                     <div class="row align-items-center">
                         <div class="col-icon">
                             <div class="icon-big text-center icon-info bubble-shadow-small">
-                                <i class="fas fa-user-check"></i>
+                                <i class="fas fa-shopping-cart"></i>
                             </div>
                         </div>
                         <div class="col col-stats ms-3 ms-sm-0">
@@ -325,44 +405,91 @@ new class extends Component {
                 </div>
             </div>
         </div>
-        {{-- <div class="col-sm-6 col-md-4">
+        <div class="col-sm-6 col-md-3">
             <div class="card card-stats card-round">
                 <div class="card-body">
                     <div class="row align-items-center">
                         <div class="col-icon">
-                            <div class="icon-big text-center icon-success bubble-shadow-small">
-                                <i class="fas fa-luggage-cart"></i>
+                            <div class="icon-big text-center icon-primary bubble-shadow-small">
+                                <i class="fas fa-wallet"></i>
                             </div>
                         </div>
                         <div class="col col-stats ms-3 ms-sm-0">
                             <div class="numbers">
                                 <p class="card-category">Total Pembiayaan</p>
-                                <h4 class="card-title">$ 1,345</h4>
+                                <h4 class="card-title">
+                                    Rp {{ number_format($total_pembiayaan, 0, ',', '.') }}
+                                </h4>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-md-4">
+        <div class="col-sm-6 col-md-3">
             <div class="card card-stats card-round">
                 <div class="card-body">
                     <div class="row align-items-center">
                         <div class="col-icon">
-                            <div class="icon-big text-center icon-secondary bubble-shadow-small">
-                                <i class="far fa-check-circle"></i>
+                            <div class="icon-big text-center icon-warning bubble-shadow-small">
+                                <i class="fas fa-coins"></i>
                             </div>
                         </div>
                         <div class="col col-stats ms-3 ms-sm-0">
                             <div class="numbers">
-                                <p class="card-category">Total Belanja</p>
-                                <h4 class="card-title">576</h4>
+                                <p class="card-category">Total Penerimaan Pembiayaan</p>
+                                <h4 class="card-title">
+                                    Rp {{ number_format($total_penerimaan_pembiayaan, 0, ',', '.') }}
+                                </h4>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div> --}}
+        </div>
+        <div class="col-sm-6 col-md-3">
+            <div class="card card-stats card-round">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-icon">
+                            <div class="icon-big text-center icon-danger bubble-shadow-small">
+                                <i class="fas fa-money-bill-wave"></i>
+                            </div>
+                        </div>
+                        <div class="col col-stats ms-3 ms-sm-0">
+                            <div class="numbers">
+                                <p class="card-category">Total Pengeluaran Pembiayaan</p>
+                                <h4 class="card-title">
+                                    Rp {{ number_format($total_pengeluaran_pembiayaan, 0, ',', '.') }}
+                                </h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-md-3">
+            <div class="card card-stats card-round">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-icon">
+                            <div class="icon-big text-center icon-success bubble-shadow-small">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                        </div>
+                        <div class="col col-stats ms-3 ms-sm-0">
+                            <div class="numbers">
+                                <p class="card-category">Total Pendapatan Asli Daerah (PAD)</p>
+                                <h4 class="card-title">
+                                    Rp {{ number_format($total_pad, 0, ',', '.') }}
+                                </h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
     </div>
     <div class="row g-2 mb-4">
         <!-- Bagian Kiri -->
