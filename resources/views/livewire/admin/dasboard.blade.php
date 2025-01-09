@@ -24,13 +24,17 @@ new class extends Component {
     public $label_chart_pendapatan = [];
     public $data_chart_pendapatan = [];
     public $color_chart_pendapatan = [];
-
-    public $label_grafik_data = [], $value_grafik_data = [], $color_grafik_data = [];
-
-    public $labels = [], $values = [], $colors = [];
-
     public $sum_total = 0;
     public $pendapatan_datas = [];
+
+    // untuk chart anggaran belanja
+    public $belanja_datas = [];
+    public $label_chart_belanja = [], $data_chart_belanja = [], $color_chart_belanja = [];
+
+    // untuk grafik data 
+    public $label_grafik_data = [], $value_grafik_data = [], $color_grafik_data = [];
+    public $labels = [], $values = [], $colors = [];
+
 
     public function mount()
     {
@@ -47,6 +51,7 @@ new class extends Component {
         $semuaData = $this->semuaData($this->filter, $this->tahun);
 
         $dataAwalPendapatan = $this->dataAwalPendapatanData();
+        $dataAwalBelanja = $this->dataAwalBelanjaData();
 
         // dd($dataAwalPendapatan);
 
@@ -61,9 +66,13 @@ new class extends Component {
                 $query->where('nama', 'like', '%pendapatan%');
             })->sum('nilai_anggaran'),
             'pendapatan_berdasarkan_rekening' => $this->pendapatanData()->where('anggarans.tahun', 'like', $this->tahun)->get(),
+            'belanja_berdasarkan_rekening' => $this->belanjaData()->where('anggarans.tahun', 'like', $this->tahun)->get(),
             'realisasi' => Realisasi::where('tahun', 'like', $this->tahun)->whereHas('anggaran.subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun', function ($query) {
                 $query->where('nama', 'like', '%belanja%');
             })->sum('nilai_realisasi'),
+            'belanja' => Anggaran::where('tahun', 'like', $this->tahun)->whereHas('subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun', function ($query) {
+                $query->where('nama', 'like', '%belanja%');
+            })->sum('nilai_anggaran'),
             'total_anggaran' => Anggaran::where('tahun', 'like', $this->tahun)->sum('nilai_anggaran'),
             'total_realisasi' => Realisasi::where('tahun', 'like', $this->tahun)->sum('nilai_realisasi'),
             'grafikData' => $grafikData,
@@ -99,12 +108,16 @@ new class extends Component {
             'data_chart_realisasi_tahunan' => $chartData['data_chart_realisasi_tahunan'],
             'data_chart_anggaran_tahunan' => $chartData['data_chart_anggaran_tahunan'],
             'colors_chart_tahunan' => $chartData['colors_chart_tahunan'],
-            'label_chart_pendapatan' => $dataAwalPendapatan['label_chart_pendapatan'],  
+            'label_chart_pendapatan' => $dataAwalPendapatan['label_chart_pendapatan'],
             'data_chart_pendapatan' => $dataAwalPendapatan['data_chart_pendapatan'],
             'color_chart_pendapatan' => $dataAwalPendapatan['color_chart_pendapatan'],
+            'label_chart_belanja' => $dataAwalBelanja['label_chart_belanja'],
+            'data_chart_belanja' => $dataAwalBelanja['data_chart_belanja'],
+            'color_chart_belanja' => $dataAwalBelanja['color_chart_belanja'],
             'sum_total' => $dataAwalPendapatan['sum_total'],
             'total_anggaran_semua_tahun' => Anggaran::sum('nilai_anggaran'),
             'total_realisasi_semua_tahun' => Realisasi::sum('nilai_realisasi'),
+
             // 'pendapatan_datas' => $dataAwalPendapatan,
         ];
     }
@@ -155,13 +168,14 @@ new class extends Component {
         ];
     }
 
-    public function dataAwalPendapatanData(){
+    public function dataAwalPendapatanData()
+    {
         $this->pendapatan_datas = $this->pendapatanData()->where('anggarans.tahun', 'like', $this->tahun)->get();
 
-            $this->label_chart_pendapatan = $this->pendapatan_datas->pluck('nama');
-            $this->data_chart_pendapatan = $this->pendapatan_datas->pluck('total');
-            $this->color_chart_pendapatan = $this->randomColors($this->pendapatan_datas->count());
-            $this->sum_total = $this->pendapatan_datas->sum('total');
+        $this->label_chart_pendapatan = $this->pendapatan_datas->pluck('nama');
+        $this->data_chart_pendapatan = $this->pendapatan_datas->pluck('total');
+        $this->color_chart_pendapatan = $this->randomColors($this->pendapatan_datas->count());
+        $this->sum_total = $this->pendapatan_datas->sum('total');
 
         return [
             'label_chart_pendapatan' => $this->label_chart_pendapatan,
@@ -186,9 +200,26 @@ new class extends Component {
         return $anggaranData;
     }
 
+
+
+    public function dataAwalBelanjaData()
+    {
+        $this->belanja_datas = $this->belanjaData()->where('anggarans.tahun', 'like', $this->tahun)->get();
+
+        $this->label_chart_belanja = $this->belanja_datas->pluck('nama');
+        $this->data_chart_belanja = $this->belanja_datas->pluck('total');
+        $this->color_chart_belanja = $this->randomColors($this->belanja_datas->count());
+
+        return [
+            'label_chart_belanja' => $this->label_chart_belanja,
+            'data_chart_belanja' => $this->data_chart_belanja,
+            'color_chart_belanja' => $this->color_chart_belanja,
+        ];
+    }
+
     public function belanjaData()
     {
-        $anggaranData = Anggaran::with('subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun')
+        $belanjaData = Anggaran::with('subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun')
             ->select('kelompok_akuns.nama', DB::raw('SUM(nilai_anggaran) as total'))
             ->join('sub_rincian_obyek_akuns', 'anggarans.sub_rincian_obyek_akun_id', '=', 'sub_rincian_obyek_akuns.id')
             ->join('rincian_obyek_akuns', 'sub_rincian_obyek_akuns.rincian_obyek_akun_id', '=', 'rincian_obyek_akuns.id')
@@ -196,14 +227,9 @@ new class extends Component {
             ->join('jenis_akuns', 'obyek_akuns.jenis_akun_id', '=', 'jenis_akuns.id')
             ->join('kelompok_akuns', 'jenis_akuns.kelompok_akun_id', '=', 'kelompok_akuns.id')
             ->where('kelompok_akuns.nama', 'like', '%belanja%')
-            ->where('anggarans.tahun', 'like', $this->tahun)
-            ->groupBy('kelompok_akuns.nama', 'kelompok_akuns.id')
-            ->get();
+            ->groupBy('kelompok_akuns.nama', 'kelompok_akuns.id');
 
-        return [
-            'labels' => $anggaranData->pluck('nama')->toArray(),
-            'values' => $anggaranData->pluck('total')->toArray()
-        ];
+        return $belanjaData;
     }
 
 
@@ -353,8 +379,7 @@ new class extends Component {
         $this->perbaharuiChart();
 
         $this->pendapatan_datas = $this->pendapatanData()->where('anggarans.tahun', 'like', $this->tahun)->get();
-
-        
+        $this->belanja_datas = $this->belanjaData()->where('anggarans.tahun', 'like', $this->tahun)->get();
     }
 
     public function perbaharuiChart()
@@ -383,6 +408,27 @@ new class extends Component {
             ]);
         }
 
+        $this->belanja_datas = $this->belanjaData()->where('anggarans.tahun', 'like', $this->tahun)->get();
+
+        if ($this->belanja_datas->count() > 0) {
+            $this->label_chart_belanja = $this->belanja_datas->pluck('nama');
+            $this->data_chart_belanja = $this->belanja_datas->pluck('total');
+            $this->color_chart_belanja = $this->randomColors($this->belanja_datas->count());
+
+            // Dispatch event ke klien
+            $this->dispatch('tampilkanGrafikBelanja', [
+                'label_chart_belanja' => $this->label_chart_belanja,
+                'data_chart_belanja' => $this->data_chart_belanja,
+                'color_chart_belanja' => $this->color_chart_belanja,
+            ]);
+        } else {
+            // Kirimkan event untuk membersihkan grafik jika data kosong
+            $this->dispatch('tampilkanGrafikBelanja', [
+                'label_chart_belanja' => ['Tidak ada data belanja di tahun ' . $this->tahun],
+                'data_chart_belanja' => ['0'],
+                'color_chart_belanja' => ['#000'],
+            ]);
+        }
     }
 
     // 
@@ -656,9 +702,9 @@ new class extends Component {
                             </strong>
                         </span>
                     </div>
-                    <div class=" mb-2 mt-3" >
-                        <ul class="dashboard-stats mt-2" style="max-height: 300px !important;">
-                            <canvas wire.ignore id="chartRealisasiBaru" style="max-height: 300px !important;"></canvas>
+                    <div class=" mb-2 mt-3">
+                        <ul class="dashboard-stats mt-2" wire.ignore style="max-height: 300px !important;">
+                            <canvas id="chartRealisasiBaru" style="max-height: 300px !important;"></canvas>
                         </ul>
                     </div>
                 </div>
@@ -674,41 +720,30 @@ new class extends Component {
                         <span class="badge bg-success text-white fs-6" style="margin-left: 0px;">Total Anggaran Belanja Berdasarkan Kelompok</span>
                         <span class="badge bg-success text-white fs-6">
                             <strong>
-                                Rp {{ number_format(array_sum($belanjaData['values']), 2, ',', '.') }}
+                                Rp {{ number_format($belanja, 0, ',', '.') }}
                             </strong>
                         </span>
                     </div>
-                    <div class="d-flex justify-content-around mb-24 mt-3 scroll flex-column flex-md-row" >
-                        <ul class="dashboard-stats mt-2" wire:ignore>
+                    <div class="d-flex justify-content-around mb-2 mt-3 scroll flex-column flex-md-row">
+                        <ul class="dashboard-stats mt-2" wire:ignore style="max-height: 300px !important; width: 100%;">
                             <canvas id="chartBelanjaGroup"></canvas>
-
                         </ul>
-                        <div class="">
-                            <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
-                                <table class="table table-sm table-hover">
-                                    <tbody>
-                                        @foreach ($belanjaData['labels'] as $index => $label)
-                                        @if ($index < 5)
-                                            <tr>
-                                            <td><strong>{{ $label }}</strong></td>
-                                            <td class="text-end">Rp {{ number_format($belanjaData['values'][$index], 2, ',', '.') }}</td>
-                                            </tr>
-                                            @endif
-                                            @endforeach
-
-                                            @if (count($belanjaData['labels']) > 5)
-                                            @foreach ($belanjaData['labels'] as $index => $label)
-                                            @if ($index >= 5)
-                                            <tr>
-                                                <td><strong>{{ $label }}</strong></td>
-                                                <td class="text-end">Rp {{ number_format($belanjaData['values'][$index], 2, ',', '.') }}</td>
-                                            </tr>
-                                            @endif
-                                            @endforeach
-                                            @endif
-                                    </tbody>
-                                </table>
-                            </div>
+                        <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                            <table class="table table-sm table-hover">
+                                <tbody>
+                                    @forelse($belanja_berdasarkan_rekening as $item)
+                                    <tr>
+                                        <td><strong>{{ $item->nama }}</strong></td>
+                                        <td class="text-end">Rp {{ number_format($item->total, 2, ',', '.') }}</td>
+                                        <td class="text-end">{{ number_format(($item->total / $realisasi) * 100, 2, ',', '.') }}%</td>
+                                    </tr>
+                                    @empty
+                                    <tr>
+                                        <td colspan="2" class="text-center">Tidak ada anggaran belanja tahun {{ $tahun }}</td>
+                                    </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -727,28 +762,26 @@ new class extends Component {
                             </strong>
                         </span>
                     </div>
-                    <div class="mb-2 mt-3" >
-                        <ul class="dashboard-stats mt-2" style="max-height: 300px !important;">
-                            <canvas wire.ignore  id="chartPendapatanGroup" style="max-height: 300px !important;"></canvas>
-
+                    <div class="d-flex justify-content-around mb-2 mt-3 scroll flex-column flex-md-row">
+                        <ul class="dashboard-stats mt-2" wire.ignore style="max-height: 300px !important; width: 100%;">
+                            <canvas id="chartPendapatanGroup"></canvas>
                         </ul>
-                        <div class="">
-                            <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
-                                <table class="table table-sm table-hover">
-                                    <tbody>
-                                        @forelse($pendapatan_berdasarkan_rekening as $item)
-                                        <tr>
-                                            <td><strong>{{ $item->nama }}</strong></td>
-                                            <td class="text-end">Rp {{ number_format($item->total, 2, ',', '.') }}</td>
-                                        </tr>
-                                        @empty
-                                        <tr>
-                                            <td colspan="2" class="text-center">Tidak ada data</td>
-                                        </tr>
-                                        @endforelse
-                                    </tbody>
-                                </table>
-                            </div>
+                        <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                            <table class="table table-sm table-hover">
+                                <tbody>
+                                    @forelse($pendapatan_berdasarkan_rekening as $item)
+                                    <tr>
+                                        <td><strong>{{ $item->nama }}</strong></td>
+                                        <td class="text-end">Rp {{ number_format($item->total, 2, ',', '.') }}</td>
+                                        <td class="text-end">{{ number_format(($item->total / $pendapatan) * 100, 2, ',', '.') }}%</td>
+                                    </tr>
+                                    @empty
+                                    <tr>
+                                        <td colspan="2" class="text-center">Tidak ada anggaran pendapatan tahun {{ $tahun }}</td>
+                                    </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -757,7 +790,7 @@ new class extends Component {
     </div>
     <div class="row g-2 mb-4">
         <!-- Bagian Kiri -->
-        <div class="col-lg-9" >
+        <div class="col-lg-9">
             <div class="card h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-center mb-24 text-left">
@@ -790,7 +823,7 @@ new class extends Component {
                             @endif
                         </span>
                     </div>
-                    <ul  class="dashboard-stats mt-2" style="max-height: 300px; overflow-y: auto;">
+                    <ul class="dashboard-stats mt-2" style="max-height: 300px; overflow-y: auto;">
                         <canvas wire:ignore id="barChart"></canvas>
                     </ul>
                     <div class="d-flex justify-content-around mb-24 mt-3" style="max-height: 300px; overflow-y: auto;">
@@ -1041,6 +1074,95 @@ new class extends Component {
                     return;
                 }
                 renderChart(label_chart_pendapatan, data_chart_pendapatan, color_chart_pendapatan);
+            });
+
+            // Render chart pertama kali
+            renderChart(initialLabels, initialData, initialColors);
+        });
+
+        // chart chartBelanjaGroup
+        let chartBelanjaGroup = null;
+
+        document.addEventListener('livewire:init', function() {
+            // data awal
+            const initialLabels = @json($label_chart_belanja);
+            const initialData = @json($data_chart_belanja);
+            const initialColors = @json($color_chart_belanja);
+
+            // Fungsi untuk membuat atau memperbarui chart
+            function renderChart(labels, data, colors) {
+                const ctx = document.getElementById('chartBelanjaGroup').getContext('2d');
+
+                if (!labels || !data || !colors || labels.length === 0 || data.length === 0 || colors.length === 0) {
+                    console.error("Data chart tidak valid:", {
+                        labels,
+                        data,
+                        colors
+                    });
+                    return;
+                }
+
+                if (chartBelanjaGroup) {
+                    chartBelanjaGroup.data.labels = labels;
+                    chartBelanjaGroup.data.datasets[0].data = data;
+                    chartBelanjaGroup.data.datasets[0].backgroundColor = colors.slice(0, data.length);
+                    chartBelanjaGroup.update();
+                } else {
+                    // Jika chart belum ada, buat chart baru
+                    chartBelanjaGroup = new Chart(ctx, {
+                        type: 'pie',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Nominal',
+                                data: data,
+                                backgroundColor: colors.slice(0, data.length),
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: {
+                                    position: 'top',
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(tooltipItem) {
+                                            return 'Rp ' + tooltipItem.raw.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+
+            // Mendengarkan event Livewire untuk update data chart
+            Livewire.on('tampilkanGrafikBelanja', function(response) {
+                if (!Array.isArray(response) || response.length === 0) {
+                    console.error("Response tidak valid:", response);
+                    return;
+                }
+
+                const dataObject = response[0];
+                const label_chart_belanja = dataObject.label_chart_belanja;
+                const data_chart_belanja = dataObject.data_chart_belanja.map(Number);
+                const color_chart_belanja = dataObject.color_chart_belanja;
+
+                console.log("Data chart diterima dari Livewire:", dataObject);
+
+                if (!label_chart_belanja || !data_chart_belanja || !color_chart_belanja || label_chart_belanja.length === 0 || data_chart_belanja.length === 0 || color_chart_belanja.length === 0) {
+                    console.error("Data chart tidak valid:", {
+                        label_chart_belanja,
+                        data_chart_belanja,
+                        color_chart_belanja
+                    });
+                    return;
+                }
+
+                renderChart(label_chart_belanja, data_chart_belanja, color_chart_belanja);
             });
 
             // Render chart pertama kali
