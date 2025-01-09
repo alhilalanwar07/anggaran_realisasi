@@ -9,101 +9,178 @@ use App\Models\SubKegiatan;
 use App\Models\Anggaran;
 use App\Models\Realisasi;
 use App\Models\KelompokAkun;
+use App\Models\SubRincianObyekAkun;
 use Illuminate\Support\Facades\DB;
 
 new class extends Component {
     public $filter = 'urusan';
     public $tahun;
+    public $label_chart_tahunan = [];
+    public $data_chart_realisasi_tahunan = [];
+    public $data_chart_anggaran_tahunan = [];
+    public $colors_chart_tahunan = [];
+
+    // untuk chart anggaran pendapatan
+    public $label_chart_pendapatan = [];
+    public $data_chart_pendapatan = [];
+    public $color_chart_pendapatan = [];
+
+    public $label_grafik_data = [], $value_grafik_data = [], $color_grafik_data = [];
+
+    public $labels = [], $values = [], $colors = [];
+
+    public $sum_total = 0;
+    public $pendapatan_datas = [];
 
     public function mount()
     {
-        $this->tahun = date('Y');
+        $this->tahun = 2022;
     }
 
     public function with(): array
     {
+        $chartData = $this->chartPerTahun();
         $grafikData = $this->grafikData();
-        $pendapatanData = $this->pendapatanData();
         // dd($pendapatanData);
         $belanjaData = $this->belanjaData();
+        // dd($belanjaData);
         $semuaData = $this->semuaData($this->filter, $this->tahun);
+
+        $dataAwalPendapatan = $this->dataAwalPendapatanData();
+
+        // dd($dataAwalPendapatan);
+
+        // dd($this->pendapatan_datas);
         return [
             'skpd' => Skpd::groupBy('kode')->count(),
             'unit_skpd' => SubSkpd::groupBy('kode')->count(),
             'program' => Program::groupBy('kode')->count(),
             'kegiatan' => Kegiatan::groupBy('kode')->count(),
             'sub_kegiatan' => SubKegiatan::groupBy('kode')->count(),
-            'pendapatan' => Anggaran::where('tahun','like', $this->tahun)->whereHas('subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun', function ($query) {
+            'pendapatan' => Anggaran::where('tahun', 'like', $this->tahun)->whereHas('subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun', function ($query) {
                 $query->where('nama', 'like', '%pendapatan%');
             })->sum('nilai_anggaran'),
-            'realisasi' => Realisasi::where('tahun','like', $this->tahun)->whereHas('anggaran.subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun', function ($query) {
+            'realisasi' => Realisasi::where('tahun', 'like', $this->tahun)->whereHas('anggaran.subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun', function ($query) {
                 $query->where('nama', 'like', '%belanja%');
             })->sum('nilai_realisasi'),
-            'total_anggaran' => Anggaran::where('tahun','like', $this->tahun)->sum('nilai_anggaran'),
-            'total_realisasi' => Realisasi::where('tahun','like', $this->tahun)->sum('nilai_realisasi'),
+            'total_anggaran' => Anggaran::where('tahun', 'like', $this->tahun)->sum('nilai_anggaran'),
+            'total_realisasi' => Realisasi::where('tahun', 'like', $this->tahun)->sum('nilai_realisasi'),
             'grafikData' => $grafikData,
-            'pendapatanData' => $pendapatanData,
             'belanjaData' => $belanjaData,
             'filter' => $this->filter,
             'semuaData' => $semuaData,
             'tahun' => $this->tahun,
-            'total_pembiayaan' => Anggaran::where('tahun','like', $this->tahun)->whereHas('subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun', function ($query) {
+            'total_pembiayaan' => Anggaran::where('tahun', 'like', $this->tahun)->whereHas('subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun', function ($query) {
                 $query->where('nama', 'like', '%pembiayaan%');
             })->sum('nilai_anggaran'),
-            'total_penerimaan_pembiayaan' => Anggaran::where('tahun','like', $this->tahun)->whereHas('subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun', function ($query) {
+            'total_penerimaan_pembiayaan' => Anggaran::where('tahun', 'like', $this->tahun)->whereHas('subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun', function ($query) {
                 $query->where('nama', 'like', '%penerimaan pembiayaan%');
             })->sum('nilai_anggaran'),
-            'total_pengeluaran_pembiayaan' => Anggaran::where('tahun','like', $this->tahun)->whereHas('subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun', function ($query) {
+            'total_pengeluaran_pembiayaan' => Anggaran::where('tahun', 'like', $this->tahun)->whereHas('subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun', function ($query) {
                 $query->where('nama', 'like', '%pengeluaran pembiayaan%');
             })->sum('nilai_anggaran'),
-            'total_pad' => Anggaran::where('tahun','like', $this->tahun)->whereHas('subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun', function ($query) {
+            'total_pad' => Anggaran::where('tahun', 'like', $this->tahun)->whereHas('subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun', function ($query) {
                 $query->where('nama', 'like', '%pad%');
             })->sum('nilai_anggaran'),
-
+            'total_rekening_pendapatan' => SubRincianObyekAkun::whereHas('rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun', function ($query) {
+                $query->where('nama', 'like', '%pendapatan%');
+            })->count(),
+            'total_rekening_belanja' => SubRincianObyekAkun::whereHas('rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun', function ($query) {
+                $query->where('nama', 'like', '%belanja%');
+            })->count(),
+            'total_rekening_pembiayaan' => SubRincianObyekAkun::whereHas('rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun', function ($query) {
+                $query->where('nama', 'like', '%pembiayaan%');
+            })->count(),
+            'total_sub_rincian_pembiayaan' => SubRincianObyekAkun::whereHas('rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun', function ($query) {
+                $query->where('nama', 'like', '%pembiayaan%');
+            })->count(),
+            'label_chart_tahunan' => $chartData['label_chart_tahunan'],
+            'data_chart_realisasi_tahunan' => $chartData['data_chart_realisasi_tahunan'],
+            'data_chart_anggaran_tahunan' => $chartData['data_chart_anggaran_tahunan'],
+            'colors_chart_tahunan' => $chartData['colors_chart_tahunan'],
+            'label_chart_pendapatan' => $dataAwalPendapatan['label_chart_pendapatan'],  
+            'data_chart_pendapatan' => $dataAwalPendapatan['data_chart_pendapatan'],
+            'color_chart_pendapatan' => $dataAwalPendapatan['color_chart_pendapatan'],
+            'sum_total' => $dataAwalPendapatan['sum_total'],
+            // 'pendapatan_datas' => $dataAwalPendapatan,
         ];
     }
+
 
     public function grafikData()
     {
         $anggaranData = Anggaran::with('subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun')
-            ->select('kelompok_akuns.nama', DB::raw('SUM(nilai_anggaran) as total'))
+            ->select('kelompok_akuns.nama as nama', DB::raw('SUM(anggarans.nilai_anggaran) as total'))
             ->join('sub_rincian_obyek_akuns', 'anggarans.sub_rincian_obyek_akun_id', '=', 'sub_rincian_obyek_akuns.id')
             ->join('rincian_obyek_akuns', 'sub_rincian_obyek_akuns.rincian_obyek_akun_id', '=', 'rincian_obyek_akuns.id')
             ->join('obyek_akuns', 'rincian_obyek_akuns.obyek_akun_id', '=', 'obyek_akuns.id')
             ->join('jenis_akuns', 'obyek_akuns.jenis_akun_id', '=', 'jenis_akuns.id')
             ->join('kelompok_akuns', 'jenis_akuns.kelompok_akun_id', '=', 'kelompok_akuns.id')
-            ->whereYear('anggarans.tahun', $this->tahun)
+            ->where('anggarans.tahun', 'like', $this->tahun)
             ->groupBy('kelompok_akuns.nama', 'kelompok_akuns.id')
             ->get();
 
-        $kelompokAkun = $anggaranData->pluck('nama')->toArray();
-        $values = $anggaranData->pluck('total')->toArray();
+        $this->label_grafik_data = $anggaranData->pluck('nama')->toArray();
+        $this->value_grafik_data = $anggaranData->pluck('total')->toArray();
+        $this->color_grafik_data = $this->randomColors(count($this->label_grafik_data));
 
         return [
-            'labels' => $kelompokAkun,
-            'values' => $values
+            'label_grafik_data' => $this->label_grafik_data,
+            'value_grafik_data' => $this->value_grafik_data,
+            'color_grafik_data' => $this->color_grafik_data
+        ];
+    }
+
+    public function chartPerTahun()
+    {
+        $realisasi = Realisasi::with('anggaran')
+            ->selectRaw('realisasis.tahun, sum(realisasis.nilai_realisasi) as total_realisasi, sum(anggarans.nilai_anggaran) as total_anggaran')
+            ->join('anggarans', 'realisasis.anggaran_id', '=', 'anggarans.id')
+            ->groupBy('realisasis.tahun')
+            ->get();
+
+        $this->label_chart_tahunan = $realisasi->pluck('tahun');
+        $this->data_chart_realisasi_tahunan = $realisasi->pluck('total_realisasi');
+        $this->data_chart_anggaran_tahunan = $realisasi->pluck('total_anggaran');
+        $this->colors_chart_tahunan = $this->randomColors($realisasi->count());
+
+        return [
+            'label_chart_tahunan' => $this->label_chart_tahunan,
+            'data_chart_realisasi_tahunan' => $this->data_chart_realisasi_tahunan,
+            'data_chart_anggaran_tahunan' => $this->data_chart_anggaran_tahunan,
+            'colors_chart_tahunan' => $this->colors_chart_tahunan,
+        ];
+    }
+
+    public function dataAwalPendapatanData(){
+        $this->pendapatan_datas = $this->pendapatanData()->where('anggarans.tahun', 'like', $this->tahun)->get();
+
+            $this->label_chart_pendapatan = $this->pendapatan_datas->pluck('nama');
+            $this->data_chart_pendapatan = $this->pendapatan_datas->pluck('total');
+            $this->color_chart_pendapatan = $this->randomColors($this->pendapatan_datas->count());
+            $this->sum_total = $this->pendapatan_datas->sum('total');
+
+        return [
+            'label_chart_pendapatan' => $this->label_chart_pendapatan,
+            'data_chart_pendapatan' => $this->data_chart_pendapatan,
+            'color_chart_pendapatan' => $this->color_chart_pendapatan,
+            'sum_total' => $this->sum_total,
         ];
     }
 
     public function pendapatanData()
     {
-        $anggaranData = Anggaran::with('subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun')
-            ->select('kelompok_akuns.nama', DB::raw('SUM(nilai_anggaran) as total'))
-            ->join('sub_rincian_obyek_akuns', 'anggarans.sub_rincian_obyek_akun_id', '=', 'sub_rincian_obyek_akuns.id')
-            ->join('rincian_obyek_akuns', 'sub_rincian_obyek_akuns.rincian_obyek_akun_id', '=', 'rincian_obyek_akuns.id')
-            ->join('obyek_akuns', 'rincian_obyek_akuns.obyek_akun_id', '=', 'obyek_akuns.id')
-            ->join('jenis_akuns', 'obyek_akuns.jenis_akun_id', '=', 'jenis_akuns.id')
-            ->join('kelompok_akuns', 'jenis_akuns.kelompok_akun_id', '=', 'kelompok_akuns.id')
+        $anggaranData = KelompokAkun::with('jenisAkun.obyekAkun.rincianObyekAkun.subRincianObyekAkun.anggaran')
+            ->select('kelompok_akuns.nama', DB::raw('SUM(anggarans.nilai_anggaran) as total'))
+            ->join('jenis_akuns', 'kelompok_akuns.id', '=', 'jenis_akuns.kelompok_akun_id')
+            ->join('obyek_akuns', 'jenis_akuns.id', '=', 'obyek_akuns.jenis_akun_id')
+            ->join('rincian_obyek_akuns', 'obyek_akuns.id', '=', 'rincian_obyek_akuns.obyek_akun_id')
+            ->join('sub_rincian_obyek_akuns', 'rincian_obyek_akuns.id', '=', 'sub_rincian_obyek_akuns.rincian_obyek_akun_id')
+            ->join('anggarans', 'sub_rincian_obyek_akuns.id', '=', 'anggarans.sub_rincian_obyek_akun_id')
             ->where('kelompok_akuns.nama', 'like', '%pendapatan%')
-            ->where('anggarans.tahun', 'like', $this->tahun)
-            ->groupBy('kelompok_akuns.nama', 'kelompok_akuns.id')
-            ->get();
-        
+            ->groupBy('kelompok_akuns.nama', 'kelompok_akuns.id');
 
-        return [
-            'labels' => $anggaranData->pluck('nama')->toArray(),
-            'values' => $anggaranData->pluck('total')->toArray()
-        ];
+        return $anggaranData;
     }
 
     public function belanjaData()
@@ -116,7 +193,7 @@ new class extends Component {
             ->join('jenis_akuns', 'obyek_akuns.jenis_akun_id', '=', 'jenis_akuns.id')
             ->join('kelompok_akuns', 'jenis_akuns.kelompok_akun_id', '=', 'kelompok_akuns.id')
             ->where('kelompok_akuns.nama', 'like', '%belanja%')
-            ->whereYear('anggarans.tahun', $this->tahun)
+            ->where('anggarans.tahun', 'like', $this->tahun)
             ->groupBy('kelompok_akuns.nama', 'kelompok_akuns.id')
             ->get();
 
@@ -126,7 +203,6 @@ new class extends Component {
         ];
     }
 
-    public $labels = [], $values = [], $colors = [];
 
     public function randomColors($count)
     {
@@ -137,8 +213,10 @@ new class extends Component {
         return $colors;
     }
 
-    public function semuaData($filter = 'urusan', $tahun = 2023)
+    public function semuaData($filter = 'urusan', $tahun = null)
     {
+        $tahun = $tahun ?? $this->tahun;
+
         $query = Anggaran::with([
             'subKegiatan.kegiatan.program.subSkpd.skpd.urusanPelaksana.urusan',
             'subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun'
@@ -260,11 +338,52 @@ new class extends Component {
         $this->semuaData($this->filter, $this->tahun);
     }
 
+
     public function updatedTahun($value)
     {
         $this->tahun = $value;
         $this->semuaData($this->filter, $this->tahun);
+
+        $this->grafikData();
+        $this->chartPerTahun();
+
+        $this->perbaharuiChart();
+
+        $this->pendapatan_datas = $this->pendapatanData()->where('anggarans.tahun', 'like', $this->tahun)->get();
+
+        
     }
+
+    public function perbaharuiChart()
+    {
+        $this->pendapatan_datas = $this->pendapatanData()->where('anggarans.tahun', 'like', $this->tahun)->get();
+
+        if ($this->pendapatan_datas->count() > 0) {
+            $this->label_chart_pendapatan = $this->pendapatan_datas->pluck('nama');
+            $this->data_chart_pendapatan = $this->pendapatan_datas->pluck('total');
+            $this->color_chart_pendapatan = $this->randomColors($this->pendapatan_datas->count());
+            $this->sum_total = $this->pendapatan_datas->sum('total');
+
+            // Dispatch event ke klien
+            $this->dispatch('tampilkanGrafik', [
+                'label_chart_pendapatan' => $this->label_chart_pendapatan,
+                'data_chart_pendapatan' => $this->data_chart_pendapatan,
+                'color_chart_pendapatan' => $this->color_chart_pendapatan,
+                'sum_total' => $this->sum_total,
+                'pendapatan_datas' => $this->pendapatan_datas,
+            ]);
+        } else {
+            // Kirimkan event untuk membersihkan grafik jika data kosong
+            $this->dispatch('tampilkanGrafik', [
+                'label_chart_pendapatan' => ['Tidak ada data pendapatan di tahun ' . $this->tahun],
+                'data_chart_pendapatan' => ['0'],
+                'color_chart_pendapatan' => ['#000'],
+            ]);
+        }
+
+    }
+
+    // 
 }; ?>
 
 <div>
@@ -308,20 +427,21 @@ new class extends Component {
                     </div>
                     <span class="fw-bold">Tahun:</span>
                 </div>
-                <div class="ms-3">
+                <div class="ms-3 d-flex align-items-center gap-2">
                     <select wire:model.live="tahun" class="form-select">
-                        @for ($i = 2021; $i <= date('Y'); $i++) 
+                        @for ($i = 2021; $i <= date('Y'); $i++)
                             <option value="{{ $i }}">{{ $i }}</option>
-                        @endfor
+                            @endfor
                     </select>
-
+                    <button wire:click="perbaharuiChart" class="btn btn-primary btn-sm">
+                        <i class="fas fa-sync"></i>
+                    </button>
                 </div>
             </div>
         </div>
-
     </div>
     <div class="row">
-    <div class="col-sm-6 col-md-3">
+        <div class="col-sm-6 col-md-3">
             <div class="card card-stats card-round">
                 <div class="card-body">
                     <div class="row align-items-center">
@@ -489,7 +609,7 @@ new class extends Component {
                 </div>
             </div>
         </div>
-        
+
     </div>
     <div class="row g-2 mb-4">
         <!-- Bagian Kiri -->
@@ -508,9 +628,15 @@ new class extends Component {
                         <li><span class="label"><strong>Program</strong></span> <span class="value">{{ $program }}</span></li>
                         <li><span class="label"><strong>Kegiatan</strong></span> <span class="value">{{ $kegiatan }}</span></li>
                         <li><span class="label"><strong>Sub Kegiatan</strong></span> <span class="value">{{ $sub_kegiatan }}</span></li>
-                        <li><span class="label"><strong>Rekening Pendapatan</strong></span> <span class="value">348</span></li>
-                        <li><span class="label"><strong>Rekening Belanja</strong></span> <span class="value">43796</span></li>
-                        <li><span class="label"><strong>Rekening Pembiayaan</strong></span> <span class="value">42</span></li>
+                        <li><span class="label"><strong>Rekening Pendapatan</strong></span> <span class="value">
+                                {{ $total_rekening_pendapatan }}
+                            </span></li>
+                        <li><span class="label"><strong>Rekening Belanja</strong></span> <span class="value">
+                                {{ $total_rekening_belanja }}
+                            </span></li>
+                        <li><span class="label"><strong>Rekening Pembiayaan</strong></span> <span class="value">
+                                {{ $total_rekening_pembiayaan }}
+                            </span></li>
                     </ul>
                 </div>
             </div>
@@ -524,42 +650,14 @@ new class extends Component {
                         <span class="badge bg-primary text-white fs-6" style="margin-left: 0px;">Total Belanja Per Sumber Dana</span>
                         <span class="badge bg-primary text-white fs-6">
                             <strong>
-                                Rp {{ number_format(array_sum($grafikData['values']), 2, ',', '.') }}
+                                
                             </strong>
                         </span>
                     </div>
-                    <div class="d-flex justify-content-around mb-24 mt-3">
-                        <ul class="dashboard-stats mt-2">
-                            <canvas id="kelompokChart"></canvas>
-
+                    <div class=" mb-2 mt-3" >
+                        <ul class="dashboard-stats mt-2" wire:ignore style="max-height: 300px !important;">
+                            <canvas id="chartRealisasiBaru" style="max-height: 300px !important;"></canvas>
                         </ul>
-                        <div class="">
-                            <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
-                                <table class="table table-sm table-hover">
-                                    <tbody>
-                                        @foreach ($grafikData['labels'] as $index => $label)
-                                        @if ($index < 5)
-                                            <tr>
-                                            <td><strong>{{ $label }}</strong></td>
-                                            <td class="text-end">Rp {{ number_format($grafikData['values'][$index], 2, ',', '.') }}</td>
-                                            </tr>
-                                            @endif
-                                            @endforeach
-
-                                            @if (count($grafikData['labels']) > 5)
-                                            @foreach ($grafikData['labels'] as $index => $label)
-                                            @if ($index >= 5)
-                                            <tr>
-                                                <td><strong>{{ $label }}</strong></td>
-                                                <td class="text-end">Rp {{ number_format($grafikData['values'][$index], 2, ',', '.') }}</td>
-                                            </tr>
-                                            @endif
-                                            @endforeach
-                                            @endif
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -578,8 +676,8 @@ new class extends Component {
                             </strong>
                         </span>
                     </div>
-                    <div class="d-flex justify-content-around mb-24 mt-3">
-                        <ul class="dashboard-stats mt-2">
+                    <div class="d-flex justify-content-around mb-24 mt-3" >
+                        <ul class="dashboard-stats mt-2" wire:ignore>
                             <canvas id="chartBelanjaGroup"></canvas>
 
                         </ul>
@@ -623,38 +721,29 @@ new class extends Component {
                         <span class="badge bg-secondary text-white fs-6" style="margin-left: 0px;">Total Anggaran Pendapatan Berdasarkan Kelompok</span>
                         <span class="badge bg-secondary text-white fs-6">
                             <strong>
-                                Rp {{ number_format(array_sum($pendapatanData['values']), 2, ',', '.') }}
+                                Rp {{ number_format($sum_total, 2, ',', '.') }}
                             </strong>
                         </span>
                     </div>
-                    <div class="d-flex justify-content-around mb-24 mt-3">
-                        <ul class="dashboard-stats mt-2">
-                            <canvas id="chartPendapatanGroup"></canvas>
+                    <div class="mb-2 mt-3" >
+                        <ul class="dashboard-stats mt-2" style="max-height: 300px !important;">
+                            <canvas  id="chartPendapatanGroup" style="max-height: 300px !important;"></canvas>
 
                         </ul>
                         <div class="">
                             <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
                                 <table class="table table-sm table-hover">
                                     <tbody>
-                                        @foreach ($pendapatanData['labels'] as $index => $label)
-                                        @if ($index < 5)
-                                            <tr>
-                                            <td><strong>{{ $label }}</strong></td>
-                                            <td class="text-end">Rp {{ number_format($pendapatanData['values'][$index], 2, ',', '.') }}</td>
-                                            </tr>
-                                            @endif
-                                            @endforeach
-
-                                            @if (count($pendapatanData['labels']) > 5)
-                                            @foreach ($pendapatanData['labels'] as $index => $label)
-                                            @if ($index >= 5)
-                                            <tr>
-                                                <td><strong>{{ $label }}</strong></td>
-                                                <td class="text-end">Rp {{ number_format($pendapatanData['values'][$index], 2, ',', '.') }}</td>
-                                            </tr>
-                                            @endif
-                                            @endforeach
-                                            @endif
+                                        @forelse($pendapatan_datas as $index => $pendapatan_data)
+                                        <tr>
+                                            <td><strong>{{ $pendapatan_data->nama ?? 0 }}</strong></td>
+                                            <td class="text-end">Rp {{ number_format($pendapatan_data->total, 2, ',', '.') ?? 0 }}</td>
+                                        </tr>
+                                        @empty
+                                        <tr>
+                                            <td colspan="3">Tidak ada data pendapatan di tahun {{ $tahun }}</td>
+                                        </tr>
+                                        @endforelse
                                     </tbody>
                                 </table>
                             </div>
@@ -666,7 +755,7 @@ new class extends Component {
     </div>
     <div class="row g-2 mb-4">
         <!-- Bagian Kiri -->
-        <div class="col-lg-9" wire:poll.5s>
+        <div class="col-lg-9" >
             <div class="card h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-center mb-24 text-left">
@@ -699,8 +788,8 @@ new class extends Component {
                             @endif
                         </span>
                     </div>
-                    <ul wire:ignore class="dashboard-stats mt-2" style="max-height: 300px; overflow-y: auto;">
-                        <canvas id="barChart"></canvas>
+                    <ul  class="dashboard-stats mt-2" style="max-height: 300px; overflow-y: auto;">
+                        <canvas wire:ignore id="barChart"></canvas>
                     </ul>
                     <div class="d-flex justify-content-around mb-24 mt-3" style="max-height: 300px; overflow-y: auto;">
                     </div>
@@ -772,76 +861,188 @@ new class extends Component {
 
     @push('scripts')
     <script>
+        let chartRealisasiBaru = null;
+
         document.addEventListener('livewire:init', function() {
-            // randomColor
-            function randomColor() {
-                return '#' + Math.floor(Math.random() * 16777215).toString(16);
+            function renderChartBaru(labels, dataRealisasi, dataAnggaran, colors) {
+                const ctx = document.getElementById('chartRealisasiBaru').getContext('2d');
+
+                if (!labels || !dataRealisasi || !dataAnggaran || !colors || labels.length === 0 || dataRealisasi.length === 0 || dataAnggaran.length === 0 || colors.length === 0) {
+                    console.error("Data chart tidak valid:", {
+                        labels,
+                        dataRealisasi,
+                        dataAnggaran,
+                        colors
+                    });
+                    return;
+                }
+
+                if (chartRealisasiBaru) {
+                    chartRealisasiBaru.data.labels = labels;
+                    chartRealisasiBaru.data.datasets[0].data = dataRealisasi;
+                    chartRealisasiBaru.data.datasets[1].data = dataAnggaran;
+                    chartRealisasiBaru.data.datasets[0].backgroundColor = colors.slice(0, dataRealisasi.length);
+                    chartRealisasiBaru.data.datasets[1].backgroundColor = colors.slice(0, dataAnggaran.length).map(color => color.replace('1)', '0.8'));
+                    chartRealisasiBaru.update();
+                } else {
+                    // fungsi color random
+                    function randomColor() {
+                        return `rgba(${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)}, 1)`;
+                    }
+                    // Jika chart belum ada, buat chart baru
+                    chartRealisasiBaru = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                    label: 'Nilai Anggaran',
+                                    data: dataAnggaran,
+                                    backgroundColor: randomColor(), // Warna berbeda untuk nilai anggaran
+                                    borderColor: randomColor(),
+                                    borderWidth: 1
+                                },
+                                {
+                                    label: 'Nilai Realisasi',
+                                    data: dataRealisasi,
+                                    backgroundColor: randomColor(), // Warna berbeda untuk nilai realisasi
+                                    borderColor: randomColor(),
+                                    borderWidth: 1
+                                },
+
+                            ]
+                        },
+                        options: {
+                            plugins: {
+                                legend: {
+                                    labels: {
+                                        font: {
+                                            size: 12, // Custom font size
+                                            weight: 'bold' // Custom font weight
+                                        }
+                                    }
+                                },
+                                tooltip: {
+                                    titleFont: {
+                                        size: 14
+                                    },
+                                    bodyFont: {
+                                        size: 12
+                                    }
+                                }
+                            },
+                            responsive: true,
+                        }
+                    });
+                }
             }
 
-            const ctx = document.getElementById('kelompokChart').getContext('2d');
-            const values = @json($grafikData['values']);
-            const colors = values.map(() => randomColor());
-            const chart = new Chart(ctx, {
-                type: 'pie',
-                data: {
-                    labels: @json($grafikData['labels']),
-                    datasets: [{
-                        data: values,
-                        backgroundColor: colors
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
-                    }
-                },
+            // Mendengarkan event Livewire untuk update data chart baru
+            Livewire.on('tampilkanGrafikBaru', (event) => {
+                const {
+                    labels,
+                    dataRealisasi,
+                    dataAnggaran,
+                    colors
+                } = event.detail;
+                renderChartBaru(labels, dataRealisasi, dataAnggaran, colors);
             });
 
-            const ctxPendapatanGroup = document.getElementById('chartPendapatanGroup').getContext('2d');
-            new Chart(ctxPendapatanGroup, {
-                type: 'pie',
-                data: {
-                    labels: @json($pendapatanData['labels']),
-                    datasets: [{
-                        data: @json($pendapatanData['values']),
-                        backgroundColor: @json($pendapatanData['labels']).map(() => randomColor()),
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            display: false
+            // Inisialisasi pertama kali dengan data awal
+            const initialLabels = @json($label_chart_tahunan);
+            const initialDataRealisasi = @json($data_chart_realisasi_tahunan);
+            const initialDataAnggaran = @json($data_chart_anggaran_tahunan);
+            const initialColors = @json($colors_chart_tahunan);
+
+            renderChartBaru(initialLabels, initialDataRealisasi, initialDataAnggaran, initialColors);
+
+        });
+
+        // chart pendapatanData
+        let chartPendapatanGroup = null;
+
+        document.addEventListener('livewire:init', function() {
+            // data awal
+            const initialLabels = @json($label_chart_pendapatan);
+            const initialData = @json($data_chart_pendapatan);
+            const initialColors = @json($color_chart_pendapatan);
+
+            // Fungsi untuk membuat atau memperbarui chart
+            function renderChart(labels, data, colors) {
+                const ctx = document.getElementById('chartPendapatanGroup').getContext('2d');
+
+                if (!labels || !data || !colors || labels.length === 0 || data.length === 0 || colors.length === 0) {
+                    console.error("Data chart tidak valid:", {
+                        labels,
+                        data,
+                        colors
+                    });
+                    return;
+                }
+
+                if (chartPendapatanGroup) {
+                    chartPendapatanGroup.data.labels = labels;
+                    chartPendapatanGroup.data.datasets[0].data = data;
+                    chartPendapatanGroup.data.datasets[0].backgroundColor = colors.slice(0, data.length);
+                    chartPendapatanGroup.update();
+                } else {
+                    // Jika chart belum ada, buat chart baru
+                    chartPendapatanGroup = new Chart(ctx, {
+                        type: 'pie',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Nominal',
+                                data: data,
+                                backgroundColor: colors.slice(0, data.length),
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: {
+                                    position: 'top',
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(tooltipItem) {
+                                            return 'Rp ' + tooltipItem.raw.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+                                        }
+                                    }
+                                }
+                            }
                         }
-                    }
-                },
+                    });
+                }
+            }
+
+            // Mendengarkan event Livewire untuk update data chart
+            Livewire.on('tampilkanGrafik', function(response) {
+                if (!Array.isArray(response) || response.length === 0) {
+                    console.error("Response tidak valid:", response);
+                    return;
+                }
+
+                const dataObject = response[0];
+                const label_chart_pendapatan = dataObject.label_chart_pendapatan;
+                const data_chart_pendapatan = dataObject.data_chart_pendapatan.map(Number);
+                const color_chart_pendapatan = dataObject.color_chart_pendapatan;
+
+                console.log("Data chart diterima dari Livewire:", dataObject);
+
+                if (!label_chart_pendapatan || !data_chart_pendapatan || !color_chart_pendapatan || label_chart_pendapatan.length === 0 || data_chart_pendapatan.length === 0 || color_chart_pendapatan.length === 0) {
+                    console.error("Data chart tidak valid:", {
+                        label_chart_pendapatan,
+                        data_chart_pendapatan,
+                        color_chart_pendapatan
+                    });
+                    return;
+                }
+                renderChart(label_chart_pendapatan, data_chart_pendapatan, color_chart_pendapatan);
             });
 
-            // Chart for Belanja
-            const ctxBelanjaGroup = document.getElementById('chartBelanjaGroup').getContext('2d');
-            new Chart(ctxBelanjaGroup, {
-                type: 'pie',
-                data: {
-                    labels: @json($belanjaData['labels']),
-                    datasets: [{
-                        data: @json($belanjaData['values']),
-                        backgroundColor: @json($belanjaData['labels']).map(() => randomColor()),
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
-                    }
-                },
-            });
+            // Render chart pertama kali
+            renderChart(initialLabels, initialData, initialColors);
         });
     </script>
     <script>
@@ -849,130 +1050,130 @@ new class extends Component {
 
         document.addEventListener('livewire:init', function() {
             function randomColor() {
-            return '#' + Math.floor(Math.random() * 16777215).toString(16);
+                return '#' + Math.floor(Math.random() * 16777215).toString(16);
             }
 
             function renderChart(labels, data, colors) {
-            const ctx = document.getElementById('barChart').getContext('2d');
+                const ctx = document.getElementById('barChart').getContext('2d');
 
-            if (!labels || !data || !colors || labels.length === 0 || data.length === 0 || colors.length === 0) {
-                console.error("Data chart tidak valid:", {
-                labels,
-                data,
-                colors
-                });
-                return;
-            }
-
-            if (barChart) {
-                barChart.data.labels = labels;
-                barChart.data.datasets[0].data = data;
-                barChart.data.datasets[0].backgroundColor = colors.slice(0, data.length);
-                barChart.data.datasets[0].borderColor = colors.slice(0, data.length).map(color => color.replace('1)', '0.8'));
-                barChart.update();
-            } else {
-                barChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                    label: 'Jumlah Anggaran',
-                    data: data,
-                    backgroundColor: colors.slice(0, data.length),
-                    borderColor: colors.slice(0, data.length).map(color => color.replace('1)', '0.8')),
-                    borderWidth: 1
-                    }]
-                },
-                options: {
-                    plugins: {
-                    legend: {
-                        labels: {
-                        font: {
-                            family: "'Montserrat', cursive, sans-serif",
-                            size: 12,
-                            weight: 'bold'
-                        }
-                        }
-                    },
-                    tooltip: {
-                        titleFont: {
-                        family: "'Montserrat', monospace",
-                        size: 14
-                        },
-                        bodyFont: {
-                        family: "'Montserrat', sans-serif",
-                        size: 12
-                        }
-                    }
-                    },
-                    responsive: true,
-                    scales: {
-                    y: {
-                        ticks: {
-                        font: {
-                            family: "'Montserrat', sans-serif",
-                            size: 12,
-                            weight: 'bold'
-                        }
-                        },
-                        beginAtZero: true,
-                        title: {
-                        display: true,
-                        text: 'Jumlah Anggaran',
-                        font: {
-                            family: "'Montserrat', sans-serif",
-                            size: 12,
-                            weight: 'bold'
-                        }
-                        }
-                    },
-                    x: {
-                        ticks: {
-                        font: {
-                            family: "'Montserrat', sans-serif",
-                            size: 12,
-                            weight: 'bold'
-                        }
-                        },
-                        title: {
-                        display: true,
-                        text: 'Calon',
-                        font: {
-                            family: "'Montserrat', sans-serif",
-                            size: 14,
-                            weight: 'bold'
-                        }
-                        }
-                    }
-                    }
+                if (!labels || !data || !colors || labels.length === 0 || data.length === 0 || colors.length === 0) {
+                    console.error("Data chart tidak valid:", {
+                        labels,
+                        data,
+                        colors
+                    });
+                    return;
                 }
-                });
-            }
+
+                if (barChart) {
+                    barChart.data.labels = labels;
+                    barChart.data.datasets[0].data = data;
+                    barChart.data.datasets[0].backgroundColor = colors.slice(0, data.length);
+                    barChart.data.datasets[0].borderColor = colors.slice(0, data.length).map(color => color.replace('1)', '0.8'));
+                    barChart.update();
+                } else {
+                    barChart = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Jumlah Anggaran',
+                                data: data,
+                                backgroundColor: colors.slice(0, data.length),
+                                borderColor: colors.slice(0, data.length).map(color => color.replace('1)', '0.8')),
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            plugins: {
+                                legend: {
+                                    labels: {
+                                        font: {
+                                            family: "'Montserrat', cursive, sans-serif",
+                                            size: 12,
+                                            weight: 'bold'
+                                        }
+                                    }
+                                },
+                                tooltip: {
+                                    titleFont: {
+                                        family: "'Montserrat', monospace",
+                                        size: 14
+                                    },
+                                    bodyFont: {
+                                        family: "'Montserrat', sans-serif",
+                                        size: 12
+                                    }
+                                }
+                            },
+                            responsive: true,
+                            scales: {
+                                y: {
+                                    ticks: {
+                                        font: {
+                                            family: "'Montserrat', sans-serif",
+                                            size: 12,
+                                            weight: 'bold'
+                                        }
+                                    },
+                                    beginAtZero: true,
+                                    title: {
+                                        display: true,
+                                        text: 'Jumlah Anggaran',
+                                        font: {
+                                            family: "'Montserrat', sans-serif",
+                                            size: 12,
+                                            weight: 'bold'
+                                        }
+                                    }
+                                },
+                                x: {
+                                    ticks: {
+                                        font: {
+                                            family: "'Montserrat', sans-serif",
+                                            size: 12,
+                                            weight: 'bold'
+                                        }
+                                    },
+                                    title: {
+                                        display: true,
+                                        text: 'Calon',
+                                        font: {
+                                            family: "'Montserrat', sans-serif",
+                                            size: 14,
+                                            weight: 'bold'
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
             }
 
             Livewire.on('filterChanged', function(response) {
-            if (!Array.isArray(response) || response.length === 0) {
-                console.error("Response tidak valid:", response);
-                return;
-            }
+                if (!Array.isArray(response) || response.length === 0) {
+                    console.error("Response tidak valid:", response);
+                    return;
+                }
 
-            const dataObject = response[0];
-            const labels = dataObject.labels;
-            const chartData = dataObject.data.map(Number);
-            const colors = dataObject.colors;
+                const dataObject = response[0];
+                const labels = dataObject.labels;
+                const chartData = dataObject.data.map(Number);
+                const colors = dataObject.colors;
 
-            console.log("Data chart diterima dari Livewire:", dataObject);
+                console.log("Data chart diterima dari Livewire:", dataObject);
 
-            if (!labels || !chartData || !colors || labels.length === 0 || chartData.length === 0 || colors.length === 0) {
-                console.error("Data chart tidak valid:", {
-                labels,
-                chartData,
-                colors
-                });
-                return;
-            }
+                if (!labels || !chartData || !colors || labels.length === 0 || chartData.length === 0 || colors.length === 0) {
+                    console.error("Data chart tidak valid:", {
+                        labels,
+                        chartData,
+                        colors
+                    });
+                    return;
+                }
 
-            renderChart(labels, chartData, colors);
+                renderChart(labels, chartData, colors);
             });
 
             const initialLabels = @json($labels);

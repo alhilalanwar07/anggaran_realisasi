@@ -910,9 +910,6 @@ new class extends Component {
         let chartRealisasi = null;
 
         document.addEventListener('livewire:init', function() {
-
-
-
             // Fungsi untuk membuat atau memperbarui chart
             function renderChart(labels, data, colors) {
                 const ctx = document.getElementById('chartRealisasi').getContext('2d');
@@ -1200,7 +1197,6 @@ new class extends Component {
                 renderChartAkun(label_chart_akun, data_chart_realisasi_akun, data_chart_anggaran_akun, colors_chart_realisasi_akun, colors_chart_anggaran_akun);
             });
         });
-
 
         document.addEventListener('livewire:init', function() {
             Livewire.on('fileDownloaded', () => {
