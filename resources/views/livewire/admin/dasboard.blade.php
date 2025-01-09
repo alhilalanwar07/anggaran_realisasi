@@ -34,7 +34,7 @@ new class extends Component {
 
     public function mount()
     {
-        $this->tahun = 2022;
+        $this->tahun = date('Y');
     }
 
     public function with(): array
@@ -60,6 +60,7 @@ new class extends Component {
             'pendapatan' => Anggaran::where('tahun', 'like', $this->tahun)->whereHas('subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun', function ($query) {
                 $query->where('nama', 'like', '%pendapatan%');
             })->sum('nilai_anggaran'),
+            'pendapatan_berdasarkan_rekening' => $this->pendapatanData()->where('anggarans.tahun', 'like', $this->tahun)->get(),
             'realisasi' => Realisasi::where('tahun', 'like', $this->tahun)->whereHas('anggaran.subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun', function ($query) {
                 $query->where('nama', 'like', '%belanja%');
             })->sum('nilai_realisasi'),
@@ -102,6 +103,8 @@ new class extends Component {
             'data_chart_pendapatan' => $dataAwalPendapatan['data_chart_pendapatan'],
             'color_chart_pendapatan' => $dataAwalPendapatan['color_chart_pendapatan'],
             'sum_total' => $dataAwalPendapatan['sum_total'],
+            'total_anggaran_semua_tahun' => Anggaran::sum('nilai_anggaran'),
+            'total_realisasi_semua_tahun' => Realisasi::sum('nilai_realisasi'),
             // 'pendapatan_datas' => $dataAwalPendapatan,
         ];
     }
@@ -370,7 +373,6 @@ new class extends Component {
                 'data_chart_pendapatan' => $this->data_chart_pendapatan,
                 'color_chart_pendapatan' => $this->color_chart_pendapatan,
                 'sum_total' => $this->sum_total,
-                'pendapatan_datas' => $this->pendapatan_datas,
             ]);
         } else {
             // Kirimkan event untuk membersihkan grafik jika data kosong
@@ -646,17 +648,17 @@ new class extends Component {
         <div class="col-lg-8">
             <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex justify-content-center mb-24 text-left">
-                        <span class="badge bg-primary text-white fs-6" style="margin-left: 0px;">Total Belanja Per Sumber Dana</span>
+                    <div class="d-flex justify-content-center mb-24 text-left scroll flex-column flex-md-row">
+                        <span class="badge bg-primary text-white fs-6 mb-2 mb-md-0" style="margin-left: 0px;">Total Anggaran & Realisasi Per Tahun</span>
                         <span class="badge bg-primary text-white fs-6">
                             <strong>
-                                
+                                Rp {{ number_format($total_anggaran_semua_tahun, 0, ',', '.') }} / Rp {{ number_format($total_realisasi_semua_tahun, 0, ',', '.') }}
                             </strong>
                         </span>
                     </div>
                     <div class=" mb-2 mt-3" >
-                        <ul class="dashboard-stats mt-2" wire:ignore style="max-height: 300px !important;">
-                            <canvas id="chartRealisasiBaru" style="max-height: 300px !important;"></canvas>
+                        <ul class="dashboard-stats mt-2" style="max-height: 300px !important;">
+                            <canvas wire.ignore id="chartRealisasiBaru" style="max-height: 300px !important;"></canvas>
                         </ul>
                     </div>
                 </div>
@@ -668,7 +670,7 @@ new class extends Component {
         <div class="col-lg-6">
             <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex justify-content-center mb-24 text-left">
+                    <div class="d-flex justify-content-center mb-24 text-left scroll flex-column flex-md-row">
                         <span class="badge bg-success text-white fs-6" style="margin-left: 0px;">Total Anggaran Belanja Berdasarkan Kelompok</span>
                         <span class="badge bg-success text-white fs-6">
                             <strong>
@@ -676,7 +678,7 @@ new class extends Component {
                             </strong>
                         </span>
                     </div>
-                    <div class="d-flex justify-content-around mb-24 mt-3" >
+                    <div class="d-flex justify-content-around mb-24 mt-3 scroll flex-column flex-md-row" >
                         <ul class="dashboard-stats mt-2" wire:ignore>
                             <canvas id="chartBelanjaGroup"></canvas>
 
@@ -717,31 +719,31 @@ new class extends Component {
         <div class="col-lg-6">
             <div class="card h-100">
                 <div class="card-body">
-                    <div class="d-flex justify-content-center mb-24 text-left">
+                    <div class="d-flex justify-content-center mb-24 text-left scroll flex-column flex-md-row">
                         <span class="badge bg-secondary text-white fs-6" style="margin-left: 0px;">Total Anggaran Pendapatan Berdasarkan Kelompok</span>
                         <span class="badge bg-secondary text-white fs-6">
                             <strong>
-                                Rp {{ number_format($sum_total, 2, ',', '.') }}
+                                Rp {{ number_format($pendapatan, 0, ',', '.') }}
                             </strong>
                         </span>
                     </div>
                     <div class="mb-2 mt-3" >
                         <ul class="dashboard-stats mt-2" style="max-height: 300px !important;">
-                            <canvas  id="chartPendapatanGroup" style="max-height: 300px !important;"></canvas>
+                            <canvas wire.ignore  id="chartPendapatanGroup" style="max-height: 300px !important;"></canvas>
 
                         </ul>
                         <div class="">
                             <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
                                 <table class="table table-sm table-hover">
                                     <tbody>
-                                        @forelse($pendapatan_datas as $index => $pendapatan_data)
+                                        @forelse($pendapatan_berdasarkan_rekening as $item)
                                         <tr>
-                                            <td><strong>{{ $pendapatan_data->nama ?? 0 }}</strong></td>
-                                            <td class="text-end">Rp {{ number_format($pendapatan_data->total, 2, ',', '.') ?? 0 }}</td>
+                                            <td><strong>{{ $item->nama }}</strong></td>
+                                            <td class="text-end">Rp {{ number_format($item->total, 2, ',', '.') }}</td>
                                         </tr>
                                         @empty
                                         <tr>
-                                            <td colspan="3">Tidak ada data pendapatan di tahun {{ $tahun }}</td>
+                                            <td colspan="2" class="text-center">Tidak ada data</td>
                                         </tr>
                                         @endforelse
                                     </tbody>
