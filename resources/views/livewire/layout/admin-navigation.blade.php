@@ -104,12 +104,14 @@ new class extends Component {
                         </span>
                         <h4 class="text-section">Settings</h4>
                     </li>
+                    @if(auth()->user()->role == 'admin')
                     <li class="nav-item {{ Route::is('user') ? 'active text-info' : '' }}">
                         <a class="nav-link" href="{{ route('user') }}" wire:navigate>
                             <i class="fas fa-users"></i>
                             <p>Manajemen User</p>
                         </a>
                     </li>
+                    @endif
                     <li class="nav-item {{ Route::is('profile') ? 'active text-info' : '' }}">
                         <a class="nav-link" href="{{ route('profile') }}" wire:navigate>
                             <i class="fas fa-user"></i>

@@ -244,7 +244,9 @@ new class extends Component {
                                 <th>Akun</th>
                                 <th>Nilai Anggaran</th>
                                 <th>Tahun</th>
+                                @if(auth()->user()->role == 'admin')
                                 <th>Aksi</th>
+                                @endif
                             </tr>
                         </thead>
                         <tbody>
@@ -269,6 +271,7 @@ new class extends Component {
                                 </td>
                                 <td>{{ $item->nilai_anggaran }}</td>
                                 <td>{{ $item->tahun }}</td>
+                                @if(auth()->user()->role == 'admin')
                                 <td>
                                     <button class="btn btn-primary btn-sm mb-1" wire:click="edit({{ $item->id }})" data-bs-toggle="modal" data-bs-target="#modalEdit">
                                         <i class="fa fa-edit"></i>
@@ -277,6 +280,7 @@ new class extends Component {
                                         <i class="fa fa-trash"></i>
                                     </button>
                                 </td>
+                                @endif
                             </tr>
                             @endforeach
                         </tbody>

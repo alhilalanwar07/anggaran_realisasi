@@ -16,6 +16,45 @@ new class extends Component {
             'users' => User::paginate($this->paginate)
         ];
     }
+
+    // create user
+    public $name, $username, $email, $password, $role;
+
+    public function store()
+    {
+        $this->validate([
+            'name' => 'required',
+            // 'username' => 'required',
+            'email' => 'required|email',
+            'password' => 'required',
+            'role' => 'required'
+        ], [
+            'name.required' => 'Nama tidak boleh kosong',
+            // 'username.required' => 'Username tidak boleh kosong',
+            'email.required' => 'Email tidak boleh kosong',
+            'email.email' => 'Email tidak valid',
+            'password.required' => 'Password tidak boleh kosong',
+            'role.required' => 'Role tidak boleh kosong'
+        ]);
+
+        // dd($this->name, $this->email, $this->password, $this->role);
+
+        try {
+            User::create([
+                'name' => $this->name,
+                // 'username' => $this->username,
+                'email' => $this->email,
+                'password' => bcrypt($this->password),
+                'role' => $this->role,
+                // 'status' => 'active'
+            ]);
+
+            $this->reset();
+            $this->dispatch('updateAlertToast');
+        } catch (\Exception $e) {
+            $this->dispatch('errorAlertToast', $e->getMessage());
+        }
+    }
 }; ?>
 
 <div>
@@ -25,7 +64,7 @@ new class extends Component {
                 <div class="card-head-row">
                     <div class="card-title">User</div>
                     <div class="card-tools">
-                        <a href="#" class="btn btn-info  btn-sm me-2">
+                        <a href="#" class="btn btn-info  btn-sm me-2" data-bs-toggle="modal" data-bs-target="#addUser">
                             <span class="btn-label">
                                 <i class="fa fa-plus"></i>
                             </span>
@@ -47,11 +86,10 @@ new class extends Component {
                             <tr>
                                 <th>#</th>
                                 <th>Name</th>
-                                <th>Username</th>
                                 <th>Email</th>
                                 <th>Role</th>
                                 <th>Status</th>
-                                <th>Action</th>
+                                <th width="15%">Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -60,15 +98,14 @@ new class extends Component {
                             <tr>
                                 <td>{{ $no++ }}</td>
                                 <td>{{ $user->name }}</td>
-                                <td>{{ $user->username }}</td>
                                 <td>{{ $user->email }}</td>
                                 <td>{{ $user->role }}</td>
                                 <td>
                                     <span class="badge bg-success">Active</span>
                                 </td>
                                 <td>
-                                    <a href="#" class="btn btn-sm btn-primary">Edit</a>
-                                    <a href="#" class="btn btn-sm btn-danger">Delete</a>
+                                    <a href="#" class="btn btn-sm btn-primary m-1">Edit</a>
+                                    <a href="#" class="btn btn-sm btn-danger m-1">Delete</a>
                                 </td>
                             </tr>
                             @endforeach
@@ -81,4 +118,48 @@ new class extends Component {
             </div>
         </div>
     </div>
+    <div wire:ignore class="modal fade" id="addUser" tabindex="-1" aria-labelledby="addUserLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content ">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addUserLabel">Tambah User</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                <form wire:submit.prevent="store()">
+                    @csrf
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Name</label>
+                        <input type="text" class="form-control @error('name') is-invalid @enderror" id="name" placeholder="Name" wire:model="name">
+                        @error('name') <span class="text-danger">{{ $message }}</span> @enderror
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control @error('email') is-invalid @enderror" id="email" placeholder="Email" wire:model="email">
+                        @error('email') <span class="text-danger">{{ $message }}</span> @enderror
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" class="form-control @error('password') is-invalid @enderror" id="password" placeholder="Password" wire:model="password">
+                        @error('password') <span class="text-danger">{{ $message }}</span> @enderror
+                    </div>
+                    <div class="mb-3">
+                        <label for="role" class="form-label">Role</label>
+                        <select class="form-select @error('role') is-invalid @enderror" id="role" wire:model="role">
+                            <option selected>Pilih...</option>
+                            <option value="admin">Admin</option>
+                            <option value="user">User</option>
+                        </select>
+                        @error('role') <span class="text-danger">{{ $message }}</span> @enderror
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit"  class="btn btn-primary">Simpan</button>
+                    </div>
+                </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <livewire:_alert />
 </div>

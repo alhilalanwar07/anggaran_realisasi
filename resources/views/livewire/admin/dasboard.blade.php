@@ -242,6 +242,8 @@ new class extends Component {
         return $colors;
     }
 
+    
+
     public function semuaData($filter = 'urusan', $tahun = null)
     {
         $tahun = $tahun ?? $this->tahun;
@@ -902,16 +904,6 @@ new class extends Component {
             function renderChartBaru(labels, dataRealisasi, dataAnggaran, colors) {
                 const ctx = document.getElementById('chartRealisasiBaru').getContext('2d');
 
-                if (!labels || !dataRealisasi || !dataAnggaran || !colors || labels.length === 0 || dataRealisasi.length === 0 || dataAnggaran.length === 0 || colors.length === 0) {
-                    console.error("Data chart tidak valid:", {
-                        labels,
-                        dataRealisasi,
-                        dataAnggaran,
-                        colors
-                    });
-                    return;
-                }
-
                 if (chartRealisasiBaru) {
                     chartRealisasiBaru.data.labels = labels;
                     chartRealisasiBaru.data.datasets[0].data = dataRealisasi;
@@ -1005,15 +997,6 @@ new class extends Component {
             function renderChart(labels, data, colors) {
                 const ctx = document.getElementById('chartPendapatanGroup').getContext('2d');
 
-                if (!labels || !data || !colors || labels.length === 0 || data.length === 0 || colors.length === 0) {
-                    console.error("Data chart tidak valid:", {
-                        labels,
-                        data,
-                        colors
-                    });
-                    return;
-                }
-
                 if (chartPendapatanGroup) {
                     chartPendapatanGroup.data.labels = labels;
                     chartPendapatanGroup.data.datasets[0].data = data;
@@ -1053,17 +1036,11 @@ new class extends Component {
 
             // Mendengarkan event Livewire untuk update data chart
             Livewire.on('tampilkanGrafik', function(response) {
-                if (!Array.isArray(response) || response.length === 0) {
-                    console.error("Response tidak valid:", response);
-                    return;
-                }
 
                 const dataObject = response[0];
                 const label_chart_pendapatan = dataObject.label_chart_pendapatan;
                 const data_chart_pendapatan = dataObject.data_chart_pendapatan.map(Number);
                 const color_chart_pendapatan = dataObject.color_chart_pendapatan;
-
-                console.log("Data chart diterima dari Livewire:", dataObject);
 
                 if (!label_chart_pendapatan || !data_chart_pendapatan || !color_chart_pendapatan || label_chart_pendapatan.length === 0 || data_chart_pendapatan.length === 0 || color_chart_pendapatan.length === 0) {
                     console.error("Data chart tidak valid:", {
@@ -1089,18 +1066,8 @@ new class extends Component {
             const initialData = @json($data_chart_belanja);
             const initialColors = @json($color_chart_belanja);
 
-            // Fungsi untuk membuat atau memperbarui chart
             function renderChart(labels, data, colors) {
                 const ctx = document.getElementById('chartBelanjaGroup').getContext('2d');
-
-                if (!labels || !data || !colors || labels.length === 0 || data.length === 0 || colors.length === 0) {
-                    console.error("Data chart tidak valid:", {
-                        labels,
-                        data,
-                        colors
-                    });
-                    return;
-                }
 
                 if (chartBelanjaGroup) {
                     chartBelanjaGroup.data.labels = labels;
@@ -1141,26 +1108,10 @@ new class extends Component {
 
             // Mendengarkan event Livewire untuk update data chart
             Livewire.on('tampilkanGrafikBelanja', function(response) {
-                if (!Array.isArray(response) || response.length === 0) {
-                    console.error("Response tidak valid:", response);
-                    return;
-                }
-
                 const dataObject = response[0];
                 const label_chart_belanja = dataObject.label_chart_belanja;
                 const data_chart_belanja = dataObject.data_chart_belanja.map(Number);
                 const color_chart_belanja = dataObject.color_chart_belanja;
-
-                console.log("Data chart diterima dari Livewire:", dataObject);
-
-                if (!label_chart_belanja || !data_chart_belanja || !color_chart_belanja || label_chart_belanja.length === 0 || data_chart_belanja.length === 0 || color_chart_belanja.length === 0) {
-                    console.error("Data chart tidak valid:", {
-                        label_chart_belanja,
-                        data_chart_belanja,
-                        color_chart_belanja
-                    });
-                    return;
-                }
 
                 renderChart(label_chart_belanja, data_chart_belanja, color_chart_belanja);
             });
@@ -1179,15 +1130,6 @@ new class extends Component {
 
             function renderChart(labels, data, colors) {
                 const ctx = document.getElementById('barChart').getContext('2d');
-
-                if (!labels || !data || !colors || labels.length === 0 || data.length === 0 || colors.length === 0) {
-                    console.error("Data chart tidak valid:", {
-                        labels,
-                        data,
-                        colors
-                    });
-                    return;
-                }
 
                 if (barChart) {
                     barChart.data.labels = labels;
@@ -1276,26 +1218,11 @@ new class extends Component {
             }
 
             Livewire.on('filterChanged', function(response) {
-                if (!Array.isArray(response) || response.length === 0) {
-                    console.error("Response tidak valid:", response);
-                    return;
-                }
 
                 const dataObject = response[0];
                 const labels = dataObject.labels;
                 const chartData = dataObject.data.map(Number);
                 const colors = dataObject.colors;
-
-                console.log("Data chart diterima dari Livewire:", dataObject);
-
-                if (!labels || !chartData || !colors || labels.length === 0 || chartData.length === 0 || colors.length === 0) {
-                    console.error("Data chart tidak valid:", {
-                        labels,
-                        chartData,
-                        colors
-                    });
-                    return;
-                }
 
                 renderChart(labels, chartData, colors);
             });

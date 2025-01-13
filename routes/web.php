@@ -13,7 +13,7 @@ Route::view('profile', 'profile')
     ->name('profile');
 
 Route::view('user', 'user')
-    ->middleware(['auth'])
+    ->middleware(['auth', 'admin'])
     ->name('user');
 
 Route::view('anggaran', 'anggaran')
