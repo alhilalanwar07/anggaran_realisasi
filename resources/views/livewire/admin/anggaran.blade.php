@@ -39,6 +39,9 @@ new class extends Component {
 
     public $nilai_anggaran_edit, $skpd_edit, $kegiatan_edit, $akun_edit, $tahun_edit;
 
+    public $selectAll = false;
+    public $selectedItems = [];
+
     public function updatingSearch()
     {
         $this->resetPage();
@@ -187,6 +190,116 @@ new class extends Component {
         $path = storage_path('app/public/anggaran_excel_template.xlsx');
         return response()->download($path);
     }
+
+    public function updatedSelectAll($value)
+    {
+        if ($value) {
+            $query = Anggaran::query()
+                ->select('id')
+                ->with([
+                    'subKegiatan:id,nama,kegiatan_id',
+                    'subKegiatan.kegiatan:id,nama,program_id',
+                    'subKegiatan.kegiatan.program:id,nama,sub_skpd_id',
+                    'subKegiatan.kegiatan.program.subSkpd:id,nama,skpd_id',
+                    'subKegiatan.kegiatan.program.subSkpd.skpd:id,nama,urusan_pelaksana_id,kode',
+                    'subKegiatan.kegiatan.program.subSkpd.skpd.urusanPelaksana:id,nama,kode',
+                    'subRincianObyekAkun:id,nama,kode,rincian_obyek_akun_id'
+                ]);
+
+            if ($this->tahun) {
+                $query->where('tahun', $this->tahun);
+            }
+
+            if ($this->search) {
+                $query->where(function($q) {
+                    $q->whereHas('subKegiatan', function($query) {
+                        $query->where('nama', 'like', '%' . $this->search . '%');
+                    })
+                    ->orWhereHas('subKegiatan.kegiatan.program.subSkpd', function($query) {
+                        $query->where('nama', 'like', '%' . $this->search . '%');
+                    })
+                    ->orWhereHas('subKegiatan.kegiatan.program', function($query) {
+                        $query->where('nama', 'like', '%' . $this->search . '%');
+                    })
+                    ->orWhereHas('subKegiatan.kegiatan', function($query) {
+                        $query->where('nama', 'like', '%' . $this->search . '%');
+                    })
+                    ->orWhereHas('subRincianObyekAkun', function($query) {
+                        $query->where('nama', 'like', '%' . $this->search . '%');
+                    });
+                });
+            }
+
+            $anggaran = $query->orderBy('nilai_anggaran', 'desc')
+                ->paginate($this->paginate);
+
+            $this->selectedItems = $anggaran->items() ? collect($anggaran->items())->pluck('id')->map(function ($id) {
+                return (string) $id;
+            })->toArray() : [];
+        } else {
+            $this->selectedItems = [];
+        }
+    }
+
+    public function bulkDelete()
+    {
+        try {
+            $realisasiExists = Realisasi::whereIn('anggaran_id', $this->selectedItems)->exists();
+            if ($realisasiExists) {
+                $this->dispatch('errorAlertToast', 'Beberapa data tidak dapat dihapus karena sudah direalisasi');
+                return;
+            }
+
+            Anggaran::whereIn('id', $this->selectedItems)->delete();
+            $this->selectedItems = [];
+            $this->selectAll = false;
+            $this->dispatch('deleteAlertToast');
+        } catch (\Exception $e) {
+            $this->dispatch('errorAlertToast', $e->getMessage());
+        }
+    }
+
+    public function confirmBulkDelete()
+    {
+        if (empty($this->selectedItems)) {
+            $this->dispatch('errorAlertToast', 'Pilih data yang akan dihapus!');
+            return;
+        }
+        $this->dispatch('confirmBulkDelete');
+    }
+
+    public function confirmDeleteAll()
+    {
+        $message = $this->tahun ?
+            "Semua data tahun {$this->tahun}" :
+            "Semua data";
+        $this->dispatch('confirmDeleteAll', [
+            'message' => $message,
+            'tahun' => $this->tahun
+        ]);
+    }
+
+    public function deleteAll()
+    {
+        try {
+            $query = Anggaran::query();
+            if ($this->tahun) {
+                $query->where('tahun', $this->tahun);
+            }
+            
+            // Check for existing realisasi
+            $realisasiExists = Realisasi::whereIn('anggaran_id', $query->pluck('id'))->exists();
+            if ($realisasiExists) {
+                $this->dispatch('errorAlertToast', 'Beberapa data tidak dapat dihapus karena sudah direalisasi');
+                return;
+            }
+
+            $query->delete();
+            $this->dispatch('deleteAlertToast', 'Semua data berhasil dihapus!');
+        } catch (\Exception $e) {
+            $this->dispatch('errorAlertToast', $e->getMessage());
+        }
+    }
 }; ?>
 
 <div>
@@ -207,6 +320,12 @@ new class extends Component {
                                     <span class="visually-hidden">Loading...</span>
                                 </div>
                         </button>
+                            <button class="btn btn-danger btn-sm" wire:click="confirmDeleteAll">
+                            <i class="fa fa-trash"></i> &nbsp;Hapus {{ $tahun ? 'Data '.$tahun : 'Semua Data' }}
+                            <div wire:loading wire:target="deleteAll" class="spinner-border text-light spinner-border-sm" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -216,14 +335,27 @@ new class extends Component {
                         <div class="d-flex mb-3 justify-content-between gap-2">
                             <select wire:model.live="paginate" class="form-select w-auto">
                                 <option value="10">10</option>
-                                <option value="25">25</option>
                                 <option value="50">50</option>
                                 <option value="100">100</option>
                                 <option value="500">500</option>
+                                <option value="2500">1000</option>
+                                <option value="5000">5000</option>
+                                <option value="10000">10000</option>
+                                <option value="20000">25000</option>
+                                <option value="50000">50000</option>
+                                <option value="100000">100000</option>
                             </select>
                             <input wire:model.live="search" type="text" class="form-control w-auto" placeholder="Cari...">
+                             @if(!empty($selectedItems))
+                            <button class="btn btn-danger btn-sm" wire:click="confirmBulkDelete">
+                                <i class="fa fa-trash"></i> Hapus Terpilih ({{ count($selectedItems) }})
+                            </button>
+                            @endif
+                            <div wire:loading wire:target="paginate,search,selectAll" class="spinner-border text-primary spinner-border-md" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
                         </div>
-                        <div class="">
+                        <div class="d-flex gap-2 align-items-center">
                             <select wire:model.live="tahun" class="form-control w-auto @error('tahun') is-invalid @enderror">
                                 <option value="">Semua Tahun</option>
                                 @for($i = date('Y'); $i >= 2020; $i--)
@@ -231,6 +363,15 @@ new class extends Component {
                                 @endfor
                             </select>
                             @error('tahun') <span class="error text-danger">{{ $message }}</span> @enderror
+                            @if(empty($tahun))
+                            <span class="text-center" title="Pilih tahun jika ingin hapus berdasarkan tahun saja">
+                                <i class="fa fa-exclamation-circle text-warning fa-lg"></i>
+                            </span>
+                            @endif
+                            @error('tahun') <span class="error text-danger">{{ $message }}</span> @enderror
+                            <div wire:loading wire:target="tahun" class="spinner-border text-primary spinner-border-md" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -238,7 +379,12 @@ new class extends Component {
                     <table class="table table-hover">
                         <thead>
                             <tr>
-                                <th>#</th>
+                                <th>
+                                    <div class="d-flex form-check justify-content-between">
+                                        <input type="checkbox" class="form-check-input" wire:model.live="selectAll" id="selectAll">
+                                        <label class="form-check-label" for="selectAll">#</label>
+                                    </div>
+                                </th>
                                 <th>SKPD</th>
                                 <th>Kegiatan</th>
                                 <th>Akun</th>
@@ -250,7 +396,12 @@ new class extends Component {
                         <tbody>
                             @foreach($anggaran as $item)
                             <tr>
-                                <td>{{ $loop->iteration }}</td>
+                                <td>
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input" value="{{ $item->id }}" wire:model.live="selectedItems" id="cb{{ $item->id }}">
+                                        <label class="form-check-label" for="cb{{ $item->id }}">{{ $loop->iteration }}</label>
+                                    </div>
+                                </td>
                                 <td>
                                     <span class="badge badge-primary">
                                         {{ $item->subKegiatan->kegiatan->program->subSkpd->skpd->urusanPelaksana->kode }}.{{ $item->subKegiatan->kegiatan->program->subSkpd->skpd->kode }}.{{ $item->subKegiatan->kegiatan->program->subSkpd->kode }}<br>
@@ -380,7 +531,6 @@ new class extends Component {
     @push('script')
     <script>
         document.addEventListener('livewire:navigated', function() {
-
             Livewire.on('confirmDelete', (id) => {
                 swal({
                     title: "Apakah Anda yakin?"
@@ -404,12 +554,70 @@ new class extends Component {
                     }
                 }).then((willDelete) => {
                     if (willDelete) {
-                        @this.call('delete', id);
+                        Livewire.dispatch('delete', id);
+                    }
+                });
+            });
+
+            // Bulk Delete confirmation
+            Livewire.on('confirmBulkDelete', () => {
+                swal({
+                    title: "Apakah Anda yakin?"
+                    , text: "Semua data yang dipilih akan dihapus dan tidak dapat dikembalikan!"
+                    , icon: "warning"
+                    , buttons: {
+                        cancel: {
+                            text: "Batal"
+                            , value: null
+                            , visible: true
+                            , className: "btn btn-secondary"
+                            , closeModal: true
+                        , }
+                        , confirm: {
+                            text: "Hapus"
+                            , value: true
+                            , visible: true
+                            , className: "btn btn-danger"
+                            , closeModal: true
+                        }
+                    }
+                }).then((willDelete) => {
+                    if (willDelete) {
+                        Livewire.dispatch('bulkDelete');
+                    }
+                });
+            });
+
+            // Delete All confirmation
+            Livewire.on('confirmDeleteAll', (response) => {
+                const data = response[0];
+                swal({
+                    title: "Apakah Anda yakin?"
+                    , text: `${data.message} akan dihapus dan tidak dapat dikembalikan!`
+                    , icon: "warning"
+                    , buttons: {
+                        cancel: {
+                            text: "Batal"
+                            , value: null
+                            , visible: true
+                            , className: "btn btn-secondary"
+                            , closeModal: true
+                        , }
+                        , confirm: {
+                            text: "Hapus"
+                            , value: true
+                            , visible: true
+                            , className: "btn btn-danger"
+                            , closeModal: true
+                        }
+                    }
+                }).then((willDelete) => {
+                    if (willDelete) {
+                        Livewire.dispatch('deleteAll');
                     }
                 });
             });
         });
-
     </script>
     @endpush
     <livewire:_alert />

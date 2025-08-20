@@ -37,66 +37,155 @@ new class extends Component {
     public $nilai_realisasi_edit, $tahun_edit, $anggaran_id_edit;
     public $skpd_edit, $kegiatan_edit, $akun_edit;
 
+    public $realisasiID;
+
+    public $selectAll = false;
+    public $selectedItems = [];
+
+    protected $realisasi;
+
+    public $isLoading = false;
+
+    public function mount()
+    {
+        $this->realisasi = null; // Initialize as empty collection
+    }
+
     public function updatingSearch()
     {
         $this->resetPage();
+        $this->selectedItems = []; // Reset selected items when search changes
+        $this->selectAll = false; // Reset selectAll when search changes
+    }
+
+    public function updatingTahun()
+    {
+        $this->resetPage();
+        $this->selectedItems = []; // Reset selected items when year changes
+        $this->selectAll = false; // Reset selectAll when year changes
     }
 
     public function with(): array
     {
+        // $realisasi = Realisasi::with([
+        //     'anggaran.subKegiatan.kegiatan.program.subSkpd.skpd.urusanPelaksana',
+        //     'anggaran.subKegiatan.kegiatan.program.subSkpd.skpd',
+        //     'anggaran.subKegiatan.kegiatan.program.subSkpd',
+        //     'anggaran.subKegiatan.kegiatan.program',
+        //     'anggaran.subKegiatan.kegiatan',
+        //     'anggaran.subKegiatan',
+        //     'anggaran.subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun',
+        //     'anggaran.subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun',
+        //     'anggaran.subRincianObyekAkun.rincianObyekAkun.obyekAkun',
+        //     'anggaran.subRincianObyekAkun.rincianObyekAkun',
+        //     'anggaran.subRincianObyekAkun'
+        // ])
+        //     ->where('tahun', 'like', '%' . $this->tahun . '%')
+        //     ->where(function ($query) {
+        //         $query->where('nilai_realisasi', 'like', '%' . $this->search . '%')
+        //             ->orWhereHas('anggaran.subKegiatan.kegiatan.program.subSkpd.skpd.urusanPelaksana', function ($query) {
+        //                 $query->where('nama', 'like', '%' . $this->search . '%');
+        //             })
+        //             ->orWhereHas('anggaran.subKegiatan.kegiatan.program.subSkpd.skpd', function ($query) {
+        //                 $query->where('nama', 'like', '%' . $this->search . '%');
+        //             })
+        //             ->orWhereHas('anggaran.subKegiatan.kegiatan.program.subSkpd', function ($query) {
+        //                 $query->where('nama', 'like', '%' . $this->search . '%');
+        //             })
+        //             ->orWhereHas('anggaran.subKegiatan.kegiatan.program', function ($query) {
+        //                 $query->where('nama', 'like', '%' . $this->search . '%');
+        //             })
+        //             ->orWhereHas('anggaran.subKegiatan.kegiatan', function ($query) {
+        //                 $query->where('nama', 'like', '%' . $this->search . '%');
+        //             })
+        //             ->orWhereHas('anggaran.subKegiatan', function ($query) {
+        //                 $query->where('nama', 'like', '%' . $this->search . '%');
+        //             })
+        //             ->orWhereHas('anggaran.subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun', function ($query) {
+        //                 $query->where('nama', 'like', '%' . $this->search . '%');
+        //             })
+        //             ->orWhereHas('anggaran.subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun', function ($query) {
+        //                 $query->where('nama', 'like', '%' . $this->search . '%');
+        //             })
+        //             ->orWhereHas('anggaran.subRincianObyekAkun.rincianObyekAkun.obyekAkun', function ($query) {
+        //                 $query->where('nama', 'like', '%' . $this->search . '%');
+        //             })
+        //             ->orWhereHas('anggaran.subRincianObyekAkun.rincianObyekAkun', function ($query) {
+        //                 $query->where('nama', 'like', '%' . $this->search . '%');
+        //             })
+        //             ->orWhereHas('anggaran.subRincianObyekAkun', function ($query) {
+        //                 $query->where('nama', 'like', '%' . $this->search . '%');
+        //             });
+        //     })
+        //     ->orderBy('nilai_realisasi', 'desc')
+        //     ->paginate($this->paginate);
+
+        $query = Realisasi::query()
+            ->select('id', 'nilai_realisasi', 'tahun', 'anggaran_id') // Select specific columns
+            ->with([
+                'anggaran:id,sub_kegiatan_id,sub_rincian_obyek_akun_id',
+                'anggaran.subKegiatan:id,nama,kegiatan_id',
+                'anggaran.subKegiatan.kegiatan:id,nama,program_id',
+                'anggaran.subKegiatan.kegiatan.program:id,nama,sub_skpd_id',
+                'anggaran.subKegiatan.kegiatan.program.subSkpd:id,nama,skpd_id',
+                'anggaran.subKegiatan.kegiatan.program.subSkpd.skpd:id,nama,urusan_pelaksana_id,kode',
+                'anggaran.subKegiatan.kegiatan.program.subSkpd.skpd.urusanPelaksana:id,nama,kode',
+                'anggaran.subRincianObyekAkun:id,nama,kode,rincian_obyek_akun_id',
+                'anggaran.subRincianObyekAkun.rincianObyekAkun:id,nama,kode,obyek_akun_id',
+                'anggaran.subRincianObyekAkun.rincianObyekAkun.obyekAkun:id,nama,kode,jenis_akun_id',
+                'anggaran.subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun:id,nama,kode,kelompok_akun_id',
+                'anggaran.subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun:id,nama,kode'
+            ]);
+
+        if ($this->tahun) {
+            $query->where('tahun', $this->tahun);
+        }
+
+        if ($this->search) {
+            $query->where(function ($q) {
+                $q->where('nilai_realisasi', 'like', '%' . $this->search . '%')
+                    ->orWhereHas('anggaran.subKegiatan.kegiatan.program.subSkpd.skpd.urusanPelaksana', function ($query) {
+                        $query->where('nama', 'like', '%' . $this->search . '%');
+                    })
+                    ->orWhereHas('anggaran.subKegiatan.kegiatan.program.subSkpd.skpd', function ($query) {
+                        $query->where('nama', 'like', '%' . $this->search . '%');
+                    })
+                    ->orWhereHas('anggaran.subKegiatan.kegiatan.program.subSkpd', function ($query) {
+                        $query->where('nama', 'like', '%' . $this->search . '%');
+                    })
+                    ->orWhereHas('anggaran.subKegiatan.kegiatan.program', function ($query) {
+                        $query->where('nama', 'like', '%' . $this->search . '%');
+                    })
+                    ->orWhereHas('anggaran.subKegiatan.kegiatan', function ($query) {
+                        $query->where('nama', 'like', '%' . $this->search . '%');
+                    })
+                    ->orWhereHas('anggaran.subKegiatan', function ($query) {
+                        $query->where('nama', 'like', '%' . $this->search . '%');
+                    })
+                    ->orWhereHas('anggaran.subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun', function ($query) {
+                        $query->where('nama', 'like', '%' . $this->search . '%');
+                    })
+                    ->orWhereHas('anggaran.subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun', function ($query) {
+                        $query->where('nama', 'like', '%' . $this->search . '%');
+                    })
+                    ->orWhereHas('anggaran.subRincianObyekAkun.rincianObyekAkun.obyekAkun', function ($query) {
+                        $query->where('nama', 'like', '%' . $this->search . '%');
+                    })
+                    ->orWhereHas('anggaran.subRincianObyekAkun.rincianObyekAkun', function ($query) {
+                        $query->where('nama', 'like', '%' . $this->search . '%');
+                    })
+                    ->orWhereHas('anggaran.subRincianObyekAkun', function ($query) {
+                        $query->where('nama', 'like', '%' . $this->search . '%');
+                    });
+            });
+        }
+
+        $realisasi = $query->orderBy('nilai_realisasi', 'desc')
+            ->paginate($this->paginate);
+
+        $this->realisasi = $realisasi;
         return [
-            'realisasi' => Realisasi::with([
-                            'anggaran.subKegiatan.kegiatan.program.subSkpd.skpd.urusanPelaksana',
-                            'anggaran.subKegiatan.kegiatan.program.subSkpd.skpd',
-                            'anggaran.subKegiatan.kegiatan.program.subSkpd',
-                            'anggaran.subKegiatan.kegiatan.program',
-                            'anggaran.subKegiatan.kegiatan',
-                            'anggaran.subKegiatan',
-                            'anggaran.subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun',
-                            'anggaran.subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun',
-                            'anggaran.subRincianObyekAkun.rincianObyekAkun.obyekAkun',
-                            'anggaran.subRincianObyekAkun.rincianObyekAkun',
-                            'anggaran.subRincianObyekAkun'
-                        ])
-                        ->where('tahun', 'like', '%' . $this->tahun . '%')
-                        ->where(function($query) {
-                            $query->where('nilai_realisasi', 'like', '%' . $this->search . '%')
-                                ->orWhereHas('anggaran.subKegiatan.kegiatan.program.subSkpd.skpd.urusanPelaksana', function($query) {
-                                    $query->where('nama', 'like', '%' . $this->search . '%');
-                                })
-                                ->orWhereHas('anggaran.subKegiatan.kegiatan.program.subSkpd.skpd', function($query) {
-                                    $query->where('nama', 'like', '%' . $this->search . '%');
-                                })
-                                ->orWhereHas('anggaran.subKegiatan.kegiatan.program.subSkpd', function($query) {
-                                    $query->where('nama', 'like', '%' . $this->search . '%');
-                                })
-                                ->orWhereHas('anggaran.subKegiatan.kegiatan.program', function($query) {
-                                    $query->where('nama', 'like', '%' . $this->search . '%');
-                                })
-                                ->orWhereHas('anggaran.subKegiatan.kegiatan', function($query) {
-                                    $query->where('nama', 'like', '%' . $this->search . '%');
-                                })
-                                ->orWhereHas('anggaran.subKegiatan', function($query) {
-                                    $query->where('nama', 'like', '%' . $this->search . '%');
-                                })
-                                ->orWhereHas('anggaran.subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun', function($query) {
-                                    $query->where('nama', 'like', '%' . $this->search . '%');
-                                })
-                                ->orWhereHas('anggaran.subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun', function($query) {
-                                    $query->where('nama', 'like', '%' . $this->search . '%');
-                                })
-                                ->orWhereHas('anggaran.subRincianObyekAkun.rincianObyekAkun.obyekAkun', function($query) {
-                                    $query->where('nama', 'like', '%' . $this->search . '%');
-                                })
-                                ->orWhereHas('anggaran.subRincianObyekAkun.rincianObyekAkun', function($query) {
-                                    $query->where('nama', 'like', '%' . $this->search . '%');
-                                })
-                                ->orWhereHas('anggaran.subRincianObyekAkun', function($query) {
-                                    $query->where('nama', 'like', '%' . $this->search . '%');
-                                });
-                        })
-                        ->orderBy('nilai_realisasi', 'desc')
-                        ->paginate($this->paginate),
+            'realisasi' => $realisasi,
             'total' => Realisasi::sumNilaiRealisasi()
         ];
     }
@@ -113,7 +202,7 @@ new class extends Component {
         // toast error jika terjadi kesalahan
 
 
-       try {
+        try {
             $file = $this->file;
             $fileName = time() . '.' . $file->getClientOriginalExtension();
             $file->storeAs('excel', $fileName);
@@ -150,18 +239,18 @@ new class extends Component {
         } catch (\Exception $e) {
             $this->dispatch('errorAlertToast', $e->getMessage());
         }
-        
     }
 
     public function confirmDelete($id)
     {
-        $this->dispatch('confirmDelete', $id);
+        $this->realisasiID = $id;
+        $this->dispatch('confirmDelete', $this->realisasiID);
     }
 
-    public function delete($id)
+    public function delete()
     {
         try {
-            Realisasi::find($id)->delete();
+            Realisasi::find($this->realisasiID)->delete();
             $this->dispatch('deleteAlertToast');
         } catch (\Exception $e) {
             $this->dispatch('errorAlertToast', $e->getMessage());
@@ -176,16 +265,16 @@ new class extends Component {
             $this->nilai_realisasi_edit = $realisasi->rawNilaiRealisasi;
             $this->tahun_edit = $realisasi->tahun;
 
-            if($realisasi->anggaran) {
+            if ($realisasi->anggaran) {
                 $this->skpd_edit = $realisasi->anggaran->subKegiatan?->kegiatan?->program?->subSkpd?->skpd?->nama ?? 'Data tidak ditemukan';
                 $this->kegiatan_edit = $realisasi->anggaran->subKegiatan?->kegiatan?->program?->nama ?? 'Data tidak ditemukan';
                 $this->akun_edit = $realisasi->anggaran->subRincianObyekAkun?->nama ?? 'Data tidak ditemukan';
             } else {
                 $kodes = explode('.', $realisasi->kode ?? '');
-                
+
                 if (count($kodes) >= 5) {
                     $skpd = $kodes[2] ?? '';
-                    $kegiatan = $kodes[4] ?? ''; 
+                    $kegiatan = $kodes[4] ?? '';
                     $akun = end($kodes);
 
                     $this->skpd_edit = Skpd::where('kode', $skpd)->first()?->nama ?? 'Data tidak ditemukan';
@@ -227,6 +316,125 @@ new class extends Component {
         return response()->download($path);
     }
 
+
+    public function updatedSelectAll($value)
+    {
+        if ($value) {
+            $query = Realisasi::query()
+                ->select('id', 'nilai_realisasi', 'tahun', 'anggaran_id') // Select specific columns
+                ->with([
+                    'anggaran:id,sub_kegiatan_id,sub_rincian_obyek_akun_id',
+                    'anggaran.subKegiatan:id,nama,kegiatan_id',
+                    'anggaran.subKegiatan.kegiatan:id,nama,program_id',
+                    'anggaran.subKegiatan.kegiatan.program:id,nama,sub_skpd_id',
+                    'anggaran.subKegiatan.kegiatan.program.subSkpd:id,nama,skpd_id',
+                    'anggaran.subKegiatan.kegiatan.program.subSkpd.skpd:id,nama,urusan_pelaksana_id,kode',
+                    'anggaran.subKegiatan.kegiatan.program.subSkpd.skpd.urusanPelaksana:id,nama,kode',
+                    'anggaran.subRincianObyekAkun:id,nama,kode,rincian_obyek_akun_id',
+                    'anggaran.subRincianObyekAkun.rincianObyekAkun:id,nama,kode,obyek_akun_id',
+                    'anggaran.subRincianObyekAkun.rincianObyekAkun.obyekAkun:id,nama,kode,jenis_akun_id',
+                    'anggaran.subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun:id,nama,kode,kelompok_akun_id',
+                    'anggaran.subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun:id,nama,kode'
+                ]);
+
+            if ($this->tahun) {
+                $query->where('tahun', $this->tahun);
+            }
+
+            if ($this->search) {
+                $query->where(function ($q) {
+                    $q->where('nilai_realisasi', 'like', '%' . $this->search . '%')
+                        ->orWhereHas('anggaran.subKegiatan.kegiatan.program.subSkpd.skpd.urusanPelaksana', function ($query) {
+                            $query->where('nama', 'like', '%' . $this->search . '%');
+                        })
+                        ->orWhereHas('anggaran.subKegiatan.kegiatan.program.subSkpd.skpd', function ($query) {
+                            $query->where('nama', 'like', '%' . $this->search . '%');
+                        })
+                        ->orWhereHas('anggaran.subKegiatan.kegiatan.program.subSkpd', function ($query) {
+                            $query->where('nama', 'like', '%' . $this->search . '%');
+                        })
+                        ->orWhereHas('anggaran.subKegiatan.kegiatan.program', function ($query) {
+                            $query->where('nama', 'like', '%' . $this->search . '%');
+                        })
+                        ->orWhereHas('anggaran.subKegiatan.kegiatan', function ($query) {
+                            $query->where('nama', 'like', '%' . $this->search . '%');
+                        })
+                        ->orWhereHas('anggaran.subKegiatan', function ($query) {
+                            $query->where('nama', 'like', '%' . $this->search . '%');
+                        })
+                        ->orWhereHas('anggaran.subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun.kelompokAkun', function ($query) {
+                            $query->where('nama', 'like', '%' . $this->search . '%');
+                        })
+                        ->orWhereHas('anggaran.subRincianObyekAkun.rincianObyekAkun.obyekAkun.jenisAkun', function ($query) {
+                            $query->where('nama', 'like', '%' . $this->search . '%');
+                        })
+                        ->orWhereHas('anggaran.subRincianObyekAkun.rincianObyekAkun.obyekAkun', function ($query) {
+                            $query->where('nama', 'like', '%' . $this->search . '%');
+                        })
+                        ->orWhereHas('anggaran.subRincianObyekAkun.rincianObyekAkun', function ($query) {
+                            $query->where('nama', 'like', '%' . $this->search . '%');
+                        })
+                        ->orWhereHas('anggaran.subRincianObyekAkun', function ($query) {
+                            $query->where('nama', 'like', '%' . $this->search . '%');
+                        });
+                });
+            }
+
+            $realisasi = $query->orderBy('nilai_realisasi', 'desc')
+                ->paginate($this->paginate);
+
+            $this->selectedItems = $realisasi->items() ? collect($realisasi->items())->pluck('id')->map(function ($id) {
+                return (string) $id;
+            })->toArray() : [];
+        } else {
+            $this->selectedItems = [];
+        }
+    }
+
+    public function bulkDelete()
+    {
+        try {
+            Realisasi::whereIn('id', $this->selectedItems)->delete();
+            $this->selectedItems = [];
+            $this->dispatch('deleteAlertToast');
+        } catch (\Exception $e) {
+            $this->dispatch('errorAlertToast', $e->getMessage());
+        }
+    }
+
+    public function confirmBulkDelete()
+    {
+        if (empty($this->selectedItems)) {
+            $this->dispatch('errorAlertToast', 'Pilih data yang akan dihapus!');
+            return;
+        }
+        $this->dispatch('confirmBulkDelete');
+    }
+
+    public function confirmDeleteAll()
+    {
+        $message = $this->tahun ?
+            "Semua data tahun {$this->tahun}" :
+            "Semua data";
+        $this->dispatch('confirmDeleteAll', [
+            'message' => $message,
+            'tahun' => $this->tahun
+        ]);
+    }
+
+    public function deleteAll()
+    {
+        try {
+            $query = Realisasi::query();
+            if ($this->tahun) {
+                $query->where('tahun', $this->tahun);
+            }
+            $query->delete();
+            $this->dispatch('deleteAlertToast', 'Semua data berhasil dihapus!');
+        } catch (\Exception $e) {
+            $this->dispatch('errorAlertToast', $e->getMessage());
+        }
+    }
 }; ?>
 
 <div>
@@ -247,6 +455,13 @@ new class extends Component {
                                 <span class="visually-hidden">Loading...</span>
                             </div>
                         </button>
+                        <button class="btn btn-danger btn-sm" wire:click="confirmDeleteAll">
+                            <i class="fa fa-trash"></i> &nbsp;Hapus {{ $tahun ? 'Data '.$tahun : 'Semua Data' }}
+                            <div wire:loading wire:target="deleteAll" class="spinner-border text-light spinner-border-sm" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </button>
+
                     </div>
                 </div>
             </div>
@@ -254,23 +469,45 @@ new class extends Component {
                 <div class="m-2">
                     <div class="d-flex mb-3 justify-content-between gap-2">
                         <div class="d-flex mb-3 justify-content-between gap-2">
+
                             <select wire:model.live="paginate" class="form-select w-auto">
                                 <option value="10">10</option>
-                                <option value="25">25</option>
                                 <option value="50">50</option>
                                 <option value="100">100</option>
                                 <option value="500">500</option>
+                                <option value="2500">1000</option>
+                                <option value="5000">5000</option>
+                                <option value="10000">10000</option>
+                                <option value="20000">25000</option>
+                                <option value="50000">50000</option>
+                                <option value="100000">100000</option>
                             </select>
                             <input wire:model.live="search" type="text" class="form-control w-auto" placeholder="Cari...">
+                            @if(!empty($selectedItems))
+                            <button class="btn btn-danger btn-sm" wire:click="confirmBulkDelete">
+                                <i class="fa fa-trash"></i> Hapus Terpilih ({{ count($selectedItems) }})
+                            </button>
+                            @endif
+                            <div wire:loading wire:target="paginate,search,selectAll" class="spinner-border text-primary spinner-border-md" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
                         </div>
-                        <div class="">
+                        <div class="d-flex mb-3 justify-content-between gap-2 align-items-center">
                             <select wire:model.live="tahun" class="form-control w-auto @error('tahun') is-invalid @enderror">
                                 <option value="">Semua Tahun</option>
                                 @for($i = date('Y'); $i >= 2020; $i--)
                                 <option value="{{ $i }}">{{ $i }}</option>
                                 @endfor
                             </select>
+                            @if(empty($tahun))
+                            <span class="text-center" title="Pilih tahun jika ingin hapus berdasarkan tahun saja">
+                                <i class="fa fa-exclamation-circle text-warning fa-lg"></i>
+                            </span>
+                            @endif
                             @error('tahun') <span class="error text-danger">{{ $message }}</span> @enderror
+                            <div wire:loading wire:target="tahun" class="spinner-border text-primary spinner-border-md" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -278,6 +515,9 @@ new class extends Component {
                     <table class="table table-hover">
                         <thead>
                             <tr>
+                                <th>
+                                    <input type="checkbox" wire:model.live="selectAll" class="form-check-input">
+                                </th>
                                 <th>#</th>
                                 <th>SKPD</th>
                                 <th>Kegiatan</th>
@@ -290,6 +530,9 @@ new class extends Component {
                         <tbody>
                             @foreach($realisasi as $item)
                             <tr>
+                                <td>
+                                    <input type="checkbox" wire:model.live="selectedItems" value="{{ $item->id }}" class="form-check-input">
+                                </td>
                                 <td>{{ $loop->iteration }}</td>
                                 <td>
                                     <span class="badge badge-primary">
@@ -342,7 +585,7 @@ new class extends Component {
                         <!-- petunjuk upload -->
                         <div class="alert alert-info shadow-none bg-light" style="border: 2px dashed #17a2b8;">
                             <h4 class="alert-heading text-undeline badge bg-dark text-light">Petunjuk Upload</h4>
-                            <p class="mb-0">1. Download  <a href="#" wire:click.prevent="downloadTemplate" class="text-underline"><u>Template Excel</u></a>
+                            <p class="mb-0">1. Download <a href="#" wire:click.prevent="downloadTemplate" class="text-underline"><u>Template Excel</u></a>
                                 <br> 2. Isi data sesuai dengan template excel yang telah di download
                                 <br> 3. Upload file excel yang telah di isi dibawah.
                             </p>
@@ -360,7 +603,7 @@ new class extends Component {
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" wire:click="close">Tutup</button>
-                        <button type="submit" class="btn btn-primary">Import 
+                        <button type="submit" class="btn btn-primary">Import
                             <div wire:loading wire:target="importExcel" class="spinner-border text-light spinner-border-sm" role="status">
                                 <span class="visually-hidden">Loading...</span>
                             </div>
@@ -421,23 +664,23 @@ new class extends Component {
 
             Livewire.on('confirmDelete', (id) => {
                 swal({
-                    title: "Apakah Anda yakin?"
-                    , text: "Data yang dihapus tidak dapat dikembalikan!"
-                    , icon: "warning"
-                    , buttons: {
+                    title: "Apakah Anda yakin?",
+                    text: "Data yang dihapus tidak dapat dikembalikan!",
+                    icon: "warning",
+                    buttons: {
                         cancel: {
-                            text: "Batal"
-                            , value: null
-                            , visible: true
-                            , className: "btn btn-secondary"
-                            , closeModal: true
-                        , }
-                        , confirm: {
-                            text: "Hapus"
-                            , value: true
-                            , visible: true
-                            , className: "btn btn-danger"
-                            , closeModal: true
+                            text: "Batal",
+                            value: null,
+                            visible: true,
+                            className: "btn btn-secondary",
+                            closeModal: true,
+                        },
+                        confirm: {
+                            text: "Hapus",
+                            value: true,
+                            visible: true,
+                            className: "btn btn-danger",
+                            closeModal: true
                         }
                     }
                 }).then((willDelete) => {
@@ -448,6 +691,70 @@ new class extends Component {
             });
         });
 
+        document.addEventListener('livewire:navigated', function() {
+            // Script yang sudah ada...
+
+            Livewire.on('confirmBulkDelete', () => {
+                swal({
+                    title: "Apakah Anda yakin?",
+                    text: "Semua data yang dipilih akan dihapus dan tidak dapat dikembalikan!",
+                    icon: "warning",
+                    buttons: {
+                        cancel: {
+                            text: "Batal",
+                            value: null,
+                            visible: true,
+                            className: "btn btn-secondary",
+                            closeModal: true,
+                        },
+                        confirm: {
+                            text: "Hapus",
+                            value: true,
+                            visible: true,
+                            className: "btn btn-danger",
+                            closeModal: true
+                        }
+                    }
+                }).then((willDelete) => {
+                    if (willDelete) {
+                        @this.call('bulkDelete');
+                    }
+                });
+            });
+        });
+
+        document.addEventListener('livewire:navigated', function() {
+            // Script yang sudah ada...
+
+            Livewire.on('confirmDeleteAll', (response) => {
+                const data = response[0]; // Ambil data dari array response
+                swal({
+                    title: "Apakah Anda yakin?",
+                    text: data.message + " akan dihapus dan tidak dapat dikembalikan!",
+                    icon: "warning",
+                    buttons: {
+                        cancel: {
+                            text: "Batal",
+                            value: null,
+                            visible: true,
+                            className: "btn btn-secondary",
+                            closeModal: true,
+                        },
+                        confirm: {
+                            text: "Hapus",
+                            value: true,
+                            visible: true,
+                            className: "btn btn-danger",
+                            closeModal: true
+                        }
+                    }
+                }).then((willDelete) => {
+                    if (willDelete) {
+                        @this.call('deleteAll');
+                    }
+                });
+            });
+        });
     </script>
     @endpush
     <livewire:_alert />
